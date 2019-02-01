@@ -17,6 +17,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from login import site, user, password
 import itertools, sys
+import logging
 
 
 class TooManyRetries(Exception):

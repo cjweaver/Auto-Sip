@@ -1,0 +1,10 @@
+INFO:root:This is going to the log
+WARNING:root:This is a serious error you should catch
+2019-01-29 09:44:14,338:<module>:This is going to the log
+2019-01-29 09:44:14,339:<module>:This is a serious error you should catch
+{asctime:.0}:{funcName}:{message}
+{asctime:.0}:{funcName}:{message}
+INFO:root:2.0
+INFO:root:This is going to the log
+WARNING:root:This is a serious error you should catch
+INFO:__main__

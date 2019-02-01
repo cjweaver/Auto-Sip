@@ -19,6 +19,24 @@ from login import site, user, password
 import itertools, sys
 import logging
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(levelname)s:%(name)s')
+# Add the ability to change this via the cmd line arguments
+file_handler = logging.FileHandler("AutoSIP Log")
+file_handler.setFormatter(formatter)
+file_handler.setLevel(logging.DEBUG)
+logger.addHandler(file_handler)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.INFO)
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
+
+
+
+
+
 
 class TooManyRetries(Exception):
     pass
@@ -106,9 +124,9 @@ def createNewsip(shelfmark, grouping="None"):
     else:
         sami_item_text = SAMI_items[0].text
         SAMI_items[0].click()
-    print("\n******************************************************************************************")
-    print("\nSAMI Search")
-    print(sami_item_text)
+    logger.info("\n******************************************************************************************")
+    logger.info("\nSAMI Search")
+    logger.info(sami_item_text)
     
 
     # Create pSIP button
@@ -466,6 +484,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, notes, process_metadata_date):
     # this checks the process metadata
 
     driver.get(f"{site}/Steps/Process/{dest_sip_id}/{dest_step_id}")
+    handle_logout("Process Metadata", "/Steps/Process/", dest_sip_id)
     # wait for this button to appear
     driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='process-metadata-form']/div[3]/button")))
     

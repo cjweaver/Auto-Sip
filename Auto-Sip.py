@@ -16,6 +16,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from login import site, user, password
+import getpass
 import itertools, sys
 import logging
 
@@ -75,11 +76,18 @@ def handle_logout(page_title, step_url, sip_id=None):
                 print("I think this is wrong", error)
         except UnexpectedAlertPresentException:
             driver.switch_to.alert.accept()
-        
-         
+
+# Cmdline argument to switch to storing these in a textfile??       
+def ADloginDetails():
+    print("\n******************************************************************************************")
+    print("\nLogin\n")
+    user = input("Please enter your AD Username: ")
+    password = getpass.getpass(prompt="Please enter your password: ")
+    print("\n******************************************************************************************\n")
+    return user, password
 
 
-def SIP_tool_login(site, user, password, do_get=True):
+def SIP_tool_login(user, password, site="https://avsip.ad.bl.uk", do_get=True):
     # Login into the website
     if do_get:
         driver.get(f"{site}/Account/LoginAD")
@@ -193,15 +201,11 @@ def source_files(directory, file_pattern, sip_id):
     file_pattern_box.send_keys(file_pattern)
     file_pattern_box.send_keys(Keys.TAB)
     driver.find_element_by_xpath("//*[@id='main-content']/div[3]/div/button").click()
-    try:
-        driver.wait.until(EC.presence_of_element_located((By.ID, "accordion")))
-    except:
-        # Throw an exception if there are no files?
-        print("Cannot find any files")
-        # Could check the file path if no files are displayed.
-
-
-
+    driver.wait.until(EC.presence_of_element_located((By.ID, "accordion")))
+    
+    # Throw an AssertionError if no files are found
+    any_files = driver.find_element_by_xpath('//*[contains(text(), "dirs")]')
+    assert (not "0 files" in any_files.text), f"Sorry no files found with filename {file_pattern} at {path}"
 
     # The files are displayed in a <ul>
     # There are two elements with class "list-group sami-container"
@@ -221,18 +225,20 @@ def source_files(directory, file_pattern, sip_id):
         text = text.splitlines()
         path_fields = text[0].split("\\")
         for field in path_fields:
-            if field.endswith(".wav"):
+            if field.endswith(".wav") or field.endswith(".WAV"):
                 filename = field
                 #print(filename)
-        file_names.append(filename)
+                file_names.append(filename)
         item.click()
     
     print("\n******************************************************************************************")
     print("\nSelect Source Files")
-    print("Found", len(file_names), "files")
-    print("Here is the list of files", file_names)
+    print("Found", len(file_names), "file(s)")
+    print("Here is the list of files: ", *file_names)
     process_metadata_date = date_tally(file_text)
     print("The date for the Process Metadata will be", process_metadata_date)
+    print("\nThis is taken from the file's modification date")
+    print("If you wish to specifiy a date use the 'Date' column in the SIPS.xlsx")
 
 
     time.sleep(1)
@@ -263,7 +269,7 @@ def analysis(sip_id):
     def retry_analysis(failure, page, sip_id):
         global retry_count
         if retry_count > 2:
-            raise TooManyRetries()
+            raise TooManyRetries(f"A file keeps failing the {failure} process")
         retry_count += 1
         driver.get(page)
         handle_logout("File Analysis", "/Steps/Analyze/", sip_id)
@@ -291,9 +297,10 @@ def analysis(sip_id):
             # elem = driver.find_element_by_xpath('//*[@id="failed-transformation-files-collapse"]/div')
             failed_files = elem.find_elements_by_xpath("//*[@id='failed-transformation-files-collapse']/div")
             # //*[@id="failed-transformation-files-collapse"]/div/div[1]/button
+            # THIS is not finsished!!!
             print(f"DEBUG: number of failed files {len(failed_files)}")
-            for div in failed_files:
-                print(div)
+            for failure in failed_files:
+                button = failure.find_element_by_tag_name('button')
                 button.click()
                 time.sleep(1)
             print("Retrying Transformation.")
@@ -409,7 +416,7 @@ def physical_structure(physical_structure_url, sip_id):
         #time.sleep(1)
         i += 1
     
-    # Save and mark as step complete but don't continue to avoid next page modal
+    # Save and mark as step complete but don't click continue to avoid next page modal
     driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "nav-save-button"))).click()
     driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))).click()
 
@@ -421,7 +428,7 @@ def physical_structure(physical_structure_url, sip_id):
     time.sleep(5)
 
 
-def copy_processmetadata(src_sip_id, dest_sip_id, notes, process_metadata_date):
+def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_metadata_date):
     # get information for the src
     src_url = "{0}/api/SIP/{1}".format(site, src_sip_id)
     #DEBUG print("getting information for sip", src_sip_id)
@@ -442,12 +449,21 @@ def copy_processmetadata(src_sip_id, dest_sip_id, notes, process_metadata_date):
     d = json.loads(src_json['ProcessMetadata'])
     d['processMetadata'][0]['text'] = dest_title
 
-    # Updates all the dates in the Process MD to datetime.now()
+    # Updates all the dates in the Process MD to datetime from datetally()
+        for c in d['processMetadata'][0]['children']:
+        c['date'] = process_metadata_date.strftime("%Y-%m-%d")
+        #c['date'] = process_metadata_date.strftime("%Y-%m-%dT%H:%M:%S")
+    
     # and adds a note/comment on the last device
-    for c in d['processMetadata'][0]['children']:
-        c['date'] = process_metadata_date.strftime("%Y-%m-%dT%H:%M:%S")
     last_proc = d['processMetadata'][0]['children'][-1]
     last_proc['devices'][-1]['notes'] = notes
+
+    # Sets the speed of the Tape Recorder
+    for node in d['processMetadata'][0]['children']:
+        if node['processType'] == "Migration":
+                for _ in node['devices']:
+                        if _['deviceType'] == "Tape recorder":
+                            _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
 
     dest_process_metadata = json.dumps(d)
     
@@ -504,7 +520,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, notes, process_metadata_date):
    
 
 def getSIPStobuild():
-    desktop = os.path.join(os.path.expanduser('~'), 'Documents', 'siptool')
+    desktop = os.path.join(os.environ['USERPROFILE'], 'Desktop')
     print(f"Reading the SIPS.xlsx spreadsheet from {desktop}")
     os.chdir(desktop)
 
@@ -516,31 +532,35 @@ def getSIPStobuild():
     next(rows)
     # Skip first row
     for row in rows:
-        shelfmark, grouping, directory, item_format, reference_sip, notes = row
+        shelfmark, grouping, filename, directory, item_format, reference_sip, speed, eq, notes = row
         if shelfmark.value == None:
             break
-        #print(row)
-        #print("This is the current shelfmark", shelfmark.value)
-        # Filemask for old filename schema
-        # Should probably do this later?
-        # NEED To write something proper here!!!
-        #filemask = shelfmark.value[-4:] + "X"
-        # Need removed zero padding from shelfmark
-        filemask = (shelfmark.value).replace("/", "-")
-        filemask = filemask.replace(" ", "-")
-        l = [shelfmark.value, grouping, directory.value, filemask, item_format.value, reference_sip.value, notes.value]
+        if filename == None:
+            #print(row)
+            #print("This is the current shelfmark", shelfmark.value)
+            # Filemask for old filename schema
+            # Should probably do this later?
+            # NEED To write something proper here!!!
+            #filemask = shelfmark.value[-4:] + "X"
+            # Need removed zero padding from shelfmark
+            filemask = (shelfmark.value).replace("/", "-")
+            filemask = filemask.replace(" ", "-")
+        else:
+            filemask = filename.value
+        l = [shelfmark.value, grouping, directory.value, filemask, item_format.value, reference_sip.value, speed.value, eq.value, notes.value]
         SIPS.append(l)
     return SIPS
 
 def main():
-    SIP_tool_login(site, user, password)
+    SIP_tool_login(*ADloginDetails(), site)
     SIPS = getSIPStobuild()
+    failed_sips = []
     print()
     # DEBUG print(SIPS)
     global retry_count
     for sip in SIPS:
         retry_count = 0
-        shelfmark, grouping, directory, filemask, item_format, reference_sip, notes = sip
+        shelfmark, grouping, directory, filemask, item_format, reference_sip, speed, eq, notes = sip
         print(f"Procesing current shelfmark {shelfmark}")
 
     # shelfmark = "W1CDR0000211"
@@ -552,10 +572,13 @@ def main():
             process_metadata_date = source_files(directory, filemask, sip_id)
             physical_structure_url = analysis(sip_id)
             physical_structure(physical_structure_url, sip_id) #pass the physical structure??
-            copy_processmetadata(reference_sip, sip_id, notes, process_metadata_date)
+            copy_processmetadata(reference_sip, sip_id, speed, eq, notes, process_metadata_date)
         except Exception as e:
-            print("An exception occurred processing", shelfmark, e)
+            failed_sips.append((shelfmark + ":  " + str(e)))
             continue
+    print("\n******************************************************************************************")
+    print("The following SIPs did not complete sucessfully:\n", )
+    print(*failed_sips, sep="\n")
         
 
 

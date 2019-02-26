@@ -450,8 +450,8 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     d['processMetadata'][0]['text'] = dest_title
 
     # Updates all the dates in the Process MD to datetime from datetally()
-        for c in d['processMetadata'][0]['children']:
-            c['date'] = process_metadata_date.strftime("%Y-%m-%d")
+    for c in d['processMetadata'][0]['children']:
+        c['date'] = process_metadata_date.strftime("%Y-%m-%d")
         #c['date'] = process_metadata_date.strftime("%Y-%m-%dT%H:%M:%S")
     
     # and adds a note/comment on the last device
@@ -459,11 +459,12 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     last_proc['devices'][-1]['notes'] = notes
 
     # Sets the speed of the Tape Recorder
-    for node in d['processMetadata'][0]['children']:
-        if node['processType'] == "Migration":
-                for _ in node['devices']:
-                        if _['deviceType'] == "Tape recorder":
-                            _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
+    if speed != None:
+        for node in d['processMetadata'][0]['children']:
+            if node['processType'] == "Migration":
+                    for _ in node['devices']:
+                            if _['deviceType'] == "Tape recorder":
+                                _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
 
     dest_process_metadata = json.dumps(d)
     
@@ -496,16 +497,20 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     #print(r)
     
     # Once the Process Metadata has been copied from the JSON
-    # visit the page and saveContinue()
+    # visit the page and step complete & continue
     # this checks the process metadata
 
     driver.get(f"{site}/Steps/Process/{dest_sip_id}/{dest_step_id}")
     handle_logout("Process Metadata", "/Steps/Process/", dest_sip_id)
-    # wait for this button to appear
+    
+   # Page is ready when this dropdown for custom SIP metadata is available
     driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='process-metadata-form']/div[3]/button")))
+
     
     driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))).click()
     driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='page-content-wrapper']/div[2]/div[2]/nav/button[3]"))).click()
+
+
 
     print("\n******************************************************************************************")
     print("\nProcess Metadata")

@@ -451,7 +451,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
 
     # Updates all the dates in the Process MD to datetime from datetally()
         for c in d['processMetadata'][0]['children']:
-        c['date'] = process_metadata_date.strftime("%Y-%m-%d")
+            c['date'] = process_metadata_date.strftime("%Y-%m-%d")
         #c['date'] = process_metadata_date.strftime("%Y-%m-%dT%H:%M:%S")
     
     # and adds a note/comment on the last device

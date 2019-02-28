@@ -35,8 +35,11 @@ stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
 
-
-
+#Set up webdriver
+driver = webdriver.Chrome()
+driver.maximize_window()
+#driver.implicitly_wait(10)
+driver.wait = WebDriverWait(driver, 120)
 
 
 class TooManyRetries(Exception):
@@ -44,11 +47,7 @@ class TooManyRetries(Exception):
 
 retry_count = 0
 
-#Set up webdriver
-driver = webdriver.Chrome()
-driver.maximize_window()
-#driver.implicitly_wait(10)
-driver.wait = WebDriverWait(driver, 120)
+   
 
 
 def handle_logout(page_title, step_url, sip_id=None):
@@ -466,6 +465,16 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
                             if _['deviceType'] == "Tape recorder":
                                 _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
 
+    # Set the EQ type of the tape Recorder
+    if eq != None:
+        for node in d['processMetadata'][0]['children']:
+            if node['processType'] == "Migration":
+                    for _ in node['devices']:
+                            if _['deviceType'] == "Tape recorder":
+                                _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
+
+
+
     dest_process_metadata = json.dumps(d)
     
     # get the dest user id
@@ -587,11 +596,6 @@ def main():
         
 
 
-    # COMMON ERROR
-    # selenium.common.exceptions.UnexpectedAlertPresentException: Alert Text: None
-    # Message: unexpected alert open: {Alert text : Unable to update SIP current step state}
-    #   (Session info: chrome=70.0.3538.77)
-    #   (Driver info: chromedriver=2.42.591088 (7b2b2dca23cca0862f674758c9a3933e685c27d5),platform=Windows NT 6.1.7601 SP1 x86_64)
-
+   
 if __name__ == '__main__':
     main()

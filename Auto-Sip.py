@@ -448,11 +448,15 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     d = json.loads(src_json['ProcessMetadata'])
     d['processMetadata'][0]['text'] = dest_title
 
-    # Updates all the dates in the Process MD to datetime from datetally()
-    for c in d['processMetadata'][0]['children']:
-        c['date'] = process_metadata_date.strftime("%Y-%m-%d")
-        #c['date'] = process_metadata_date.strftime("%Y-%m-%dT%H:%M:%S")
-    
+    # Updates all the dates in the Process MD 
+    # to datetime from datetally()
+    if process_metadata_date == "No":
+        print("Using dates specified in reference SIP process metadata")
+    else:
+        for c in d['processMetadata'][0]['children']:
+            c['date'] = process_metadata_date.strftime("%Y-%m-%d")
+            #c['date'] = process_metadata_date.strftime("%Y-%m-%dT%H:%M:%S")
+        
     # and adds a note/comment on the last device
     last_proc = d['processMetadata'][0]['children'][-1]
     last_proc['devices'][-1]['notes'] = notes
@@ -546,7 +550,7 @@ def getSIPStobuild():
     next(rows)
     # Skip first row
     for row in rows:
-        shelfmark, grouping, filename, directory, item_format, reference_sip, speed, eq, notes = row
+        shelfmark, grouping, filename, directory, item_format, pm_date, reference_sip, speed, eq, notes = row
         if shelfmark.value == None:
             break
         if filename == None:
@@ -561,7 +565,7 @@ def getSIPStobuild():
             filemask = filemask.replace(" ", "-")
         else:
             filemask = filename.value
-        l = [shelfmark.value, grouping, directory.value, filemask, item_format.value, reference_sip.value, speed.value, eq.value, notes.value]
+        l = [shelfmark.value, grouping, directory.value, filemask, item_format.value, pm_date.value, reference_sip.value, speed.value, eq.value, notes.value]
         SIPS.append(l)
     return SIPS
 
@@ -574,7 +578,7 @@ def main():
     global retry_count
     for sip in SIPS:
         retry_count = 0
-        shelfmark, grouping, directory, filemask, item_format, reference_sip, speed, eq, notes = sip
+        shelfmark, grouping, directory, filemask, item_format, pm_date, reference_sip, speed, eq, notes = sip
         print(f"Procesing current shelfmark {shelfmark}")
 
     # shelfmark = "W1CDR0000211"
@@ -584,6 +588,11 @@ def main():
             sip_id = createNewsip(shelfmark)
             print(f"SIP ID for shelfmark {shelfmark} is {sip_id}")
             process_metadata_date = source_files(directory, filemask, sip_id)
+            if pm_date == "No":
+                process_metadata_date = False
+            # elif pm_date == datetime take from the spreadsheet use that date for process metadata
+            # else use tallydate() 
+
             physical_structure_url = analysis(sip_id)
             physical_structure(physical_structure_url, sip_id) #pass the physical structure??
             copy_processmetadata(reference_sip, sip_id, speed, eq, notes, process_metadata_date)

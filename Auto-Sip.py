@@ -15,10 +15,17 @@ from selenium.common.exceptions import UnexpectedAlertPresentException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-from login import site, user, password
+#from login import site, user, password
 import getpass
 import itertools, sys
 import logging
+
+# https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
+import urllib3
+urllib3.disable_warnings()
+
+site="https://avsip.ad.bl.uk"
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -78,15 +85,17 @@ def handle_logout(page_title, step_url, sip_id=None):
 
 # Cmdline argument to switch to storing these in a textfile??       
 def ADloginDetails():
-    print("\n******************************************************************************************")
+    global user
+    global password
+    print("\n********************************************************************************")
     print("\nLogin\n")
     user = input("Please enter your AD Username: ")
     password = getpass.getpass(prompt="Please enter your password: ")
-    print("\n******************************************************************************************\n")
+    print("\n********************************************************************************\n")
     return user, password
 
 
-def SIP_tool_login(user, password, site="https://avsip.ad.bl.uk", do_get=True):
+def SIP_tool_login(site, user, password, do_get=True):
     # Login into the website
     if do_get:
         driver.get(f"{site}/Account/LoginAD")
@@ -131,7 +140,7 @@ def createNewsip(shelfmark, grouping="None"):
     else:
         sami_item_text = SAMI_items[0].text
         SAMI_items[0].click()
-    logger.info("\n******************************************************************************************")
+    logger.info("\n********************************************************************************")
     logger.info("\nSAMI Search")
     logger.info(sami_item_text)
     
@@ -157,7 +166,7 @@ def date_tally(filenames):
     return tally_dates[-1][0]
 
 
-def source_files(directory, file_pattern, sip_id):
+def source_files(directory, file_pattern, sip_id, pm_date):
     # First check this is the right page
     # Arrive here by clicking "Complete" in previous page
     handle_logout("Select Files", "/Steps/Select/", sip_id)
@@ -230,14 +239,24 @@ def source_files(directory, file_pattern, sip_id):
                 file_names.append(filename)
         item.click()
     
-    print("\n******************************************************************************************")
+    process_metadata_date = date_tally(file_text)
+    # if pm_date == "No":
+    #     process_metadata_date = False
+        # Use the date specified in the reference SIP
+    # elif pm_date == 
+
+    print("\n********************************************************************************")
     print("\nSelect Source Files")
     print("Found", len(file_names), "file(s)")
     print("Here is the list of files: ", *file_names)
-    process_metadata_date = date_tally(file_text)
+    # process_metadata_date = date_tally(file_text)
+    # if pm_date == "No":
+    #     process_metadata_date = False
+    
     print("The date for the Process Metadata will be", process_metadata_date)
     print("\nThis is taken from the file's modification date")
-    print("If you wish to specifiy a date use the 'Date' column in the SIPS.xlsx")
+    print("If you wish to specifiy another date or use the reference SIP's date.")
+    print("Use the 'Date' column in the SIPS.xlsx")
 
 
     time.sleep(1)
@@ -255,7 +274,7 @@ def analysis(sip_id):
     # Copy All Files (Overwrite)
     driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='copy-files-buttons']/div/div/div/button[1]"))).click()
     analysis_url = driver.current_url
-    print("\n******************************************************************************************")
+    print("\n********************************************************************************")
     print("\nFile Analysis, Validation, and Transformation")
     print(f"Current analysis page is: {analysis_url}")
     time.sleep(2)
@@ -389,17 +408,23 @@ def wait_with_spinner(seconds):
 
     
 
-def physical_structure(physical_structure_url, sip_id):
+def physical_structure(physical_structure_url, sip_id, item_format):
     # Haven't arrived via clicking "Continue" from last step
     # so...
+    print("What's the problem?", site + "/" + physical_structure_url)
     driver.get(site + "/" + physical_structure_url)
     handle_logout("Physical Structure", "/Steps/Physical/", sip_id)
+
+    print("\n********************************************************************************")
+    print("\nPhysical Structure")
 
     s1 = ui.Select(driver.wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="demo1"]/div/div[1]/div[1]/select'))))
     # s1 = ui.Select(driver.find_element_by_xpath('//*[@id="demo1"]/div/div[1]/div[1]/select'))
     # select disc from the dropdown
     # The physical structure is curently hardcoded for CDRs only. Need to read the format from the XL sheet.
-    s1.select_by_index(2)
+    print(f"\nPhysical structure: {item_format}")
+    s1.select_by_visible_text(item_format)
+    #s1.select_by_index(2)
     time.sleep(1)
 
     for i in range((len(file_names)) - 1):
@@ -419,8 +444,6 @@ def physical_structure(physical_structure_url, sip_id):
     driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "nav-save-button"))).click()
     driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))).click()
 
-    print("\n******************************************************************************************")
-    print("\nPhysical Structure")
     print("Complete.")
     
 
@@ -450,7 +473,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
 
     # Updates all the dates in the Process MD 
     # to datetime from datetally()
-    if process_metadata_date == "No":
+    if process_metadata_date == False:
         print("Using dates specified in reference SIP process metadata")
     else:
         for c in d['processMetadata'][0]['children']:
@@ -525,7 +548,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
 
 
 
-    print("\n******************************************************************************************")
+    print("\n********************************************************************************")
     print("\nProcess Metadata")
     print("\n")
     print(f"Process Metadata complete for {site}/Steps/Process/{dest_sip_id}/{dest_step_id}")
@@ -553,7 +576,7 @@ def getSIPStobuild():
         shelfmark, grouping, filename, directory, item_format, pm_date, reference_sip, speed, eq, notes = row
         if shelfmark.value == None:
             break
-        if filename == None:
+        if filename.value == None:
             #print(row)
             #print("This is the current shelfmark", shelfmark.value)
             # Filemask for old filename schema
@@ -570,7 +593,7 @@ def getSIPStobuild():
     return SIPS
 
 def main():
-    SIP_tool_login(*ADloginDetails(), site)
+    SIP_tool_login(site, *ADloginDetails())
     SIPS = getSIPStobuild()
     failed_sips = []
     print()
@@ -587,22 +610,27 @@ def main():
         try:
             sip_id = createNewsip(shelfmark)
             print(f"SIP ID for shelfmark {shelfmark} is {sip_id}")
-            process_metadata_date = source_files(directory, filemask, sip_id)
-            if pm_date == "No":
-                process_metadata_date = False
+            process_metadata_date = source_files(directory, filemask, sip_id, pm_date)
+            
+            
             # elif pm_date == datetime take from the spreadsheet use that date for process metadata
             # else use tallydate() 
 
             physical_structure_url = analysis(sip_id)
-            physical_structure(physical_structure_url, sip_id) #pass the physical structure??
+            physical_structure(physical_structure_url, sip_id, item_format) #pass the physical structure??
             copy_processmetadata(reference_sip, sip_id, speed, eq, notes, process_metadata_date)
         except Exception as e:
             failed_sips.append((shelfmark + ":  " + str(e)))
             continue
-    print("\n******************************************************************************************")
-    print("The following SIPs did not complete sucessfully:\n", )
-    print(*failed_sips, sep="\n")
-        
+
+    if len(failed_sips) == 0:
+        print("\n********************************************************************************")
+        print("All SIPs completed.")
+    else:
+        print("\n********************************************************************************")
+        print("The following SIPs did not complete sucessfully:\n", )
+        print(*failed_sips, sep="\n")
+            
 
 
    

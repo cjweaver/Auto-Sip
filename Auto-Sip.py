@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 import time
 import openpyxl
 import os
@@ -24,29 +24,31 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-site="https://avsip.ad.bl.uk"
+#site="https://avsip.ad.bl.uk"
+site="https://v12l-avsip.ad.bl.uk:8445"
 
-
+log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(levelname)s:%(name)s')
-# Add the ability to change this via the cmd line arguments
-file_handler = logging.FileHandler("AutoSIP Log")
+formatter = logging.Formatter('%(asctime)s %(message)-12s', datefmt='%m-%d %H:%M')
+file_handler = logging.FileHandler(log_name)
 file_handler.setFormatter(formatter)
-file_handler.setLevel(logging.DEBUG)
 logger.addHandler(file_handler)
 
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.INFO)
-stream_handler.setFormatter(formatter)
-logger.addHandler(stream_handler)
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+formatter = logging.Formatter('%(message)s')
+console.setFormatter(formatter)
+logging.getLogger('').addHandler(console)
 
 
-#Set up webdriver
-driver = webdriver.Chrome()
-driver.maximize_window()
-#driver.implicitly_wait(10)
-driver.wait = WebDriverWait(driver, 120)
+
+
+# #Set up webdriver
+# driver = webdriver.Chrome()
+# driver.maximize_window()
+# #driver.implicitly_wait(10)
+# driver.wait = WebDriverWait(driver, 120)
 
 
 class TooManyRetries(Exception):
@@ -79,7 +81,7 @@ def handle_logout(page_title, step_url, sip_id=None):
                             step_id = item["StepStateId"]
                     driver.get(f"{site}{step_url}{sip_id}/{step_id}")
             else:
-                print("I think this is wrong", error)
+                logger.warning("Unable to navigate to correct web page %s", error, exc_info=1)
         except UnexpectedAlertPresentException:
             driver.switch_to.alert.accept()
 
@@ -119,6 +121,9 @@ def createNewsip(shelfmark, grouping="None"):
     sip = driver.wait.until(EC.visibility_of_element_located((By.ID, "searchBox")))
     sip.click()
     sip.send_keys(shelfmark)
+    # catch the modal here
+    #
+    #
     driver.find_element_by_xpath("//*[@id='main-content']/div[1]/div[1]/button").click()
     # Wait until the 1st result is found before continuing
     driver.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "list-group-item")))
@@ -140,8 +145,8 @@ def createNewsip(shelfmark, grouping="None"):
     else:
         sami_item_text = SAMI_items[0].text
         SAMI_items[0].click()
-    logger.info("\n********************************************************************************")
-    logger.info("\nSAMI Search")
+    print("\n********************************************************************************")
+    print("\nSAMI Search")
     logger.info(sami_item_text)
     
 
@@ -159,7 +164,7 @@ def date_tally(filenames):
     
     list_of_dates = []
     for file in filenames:
-        filedate = datetime.strptime((file.partition("Modified: ")[2]), "%a, %d %b %Y %H:%M:%S %Z")
+        filedate = datetime.datetime.strptime((file.partition("Modified: ")[2]), "%a, %d %b %Y %H:%M:%S %Z")
         list_of_dates.append(filedate.date())
     tally_dates = [[x, list_of_dates.count(x)] for x in set(list_of_dates)]
     tally_dates = sorted(tally_dates, key = lambda date: date[1])
@@ -172,7 +177,7 @@ def source_files(directory, file_pattern, sip_id, pm_date):
     handle_logout("Select Files", "/Steps/Select/", sip_id)
 
     path =f"\\{directory}"
-    #path = f"\\Wildlife\\{directory}"
+    logger.debug("Loading files from %s", directory)
 
     # Choose the Source directory drop down and choose SOS_HLF
     # https://stackoverflow.com/questions/46988143/select-option-in-list-with-selenium-python
@@ -239,21 +244,32 @@ def source_files(directory, file_pattern, sip_id, pm_date):
                 file_names.append(filename)
         item.click()
     
-    process_metadata_date = date_tally(file_text)
-    # if pm_date == "No":
-    #     process_metadata_date = False
+    
+    if pm_date == "No":
         # Use the date specified in the reference SIP
+        process_metadata_date = False
+    elif pm_date == "Yes":
+        # use file creation date
+        process_metadata_date = date_tally(file_text)
+    else:
+        if isinstance(pm_date, datetime.datetime):
+            process_metadata_date = pm_date
+        else:
+            logger.debug(f"{pm_date} is not a valid date.")
+            
+
+
     # elif pm_date == 
 
     print("\n********************************************************************************")
     print("\nSelect Source Files")
-    print("Found", len(file_names), "file(s)")
-    print("Here is the list of files: ", *file_names)
+    logger.info(f"Found {len(file_names)} file(s)")
+    logger.info("Here is the list of files: %s", *file_names)
     # process_metadata_date = date_tally(file_text)
     # if pm_date == "No":
     #     process_metadata_date = False
     
-    print("The date for the Process Metadata will be", process_metadata_date)
+    logger.info(f"The date for the Process Metadata will be {process_metadata_date}")
     print("\nThis is taken from the file's modification date")
     print("If you wish to specifiy another date or use the reference SIP's date.")
     print("Use the 'Date' column in the SIPS.xlsx")
@@ -261,7 +277,7 @@ def source_files(directory, file_pattern, sip_id, pm_date):
 
     time.sleep(1)
     saveContinue()
-    url = driver.current_url
+    #url = driver.current_url
     return process_metadata_date
 
 
@@ -276,7 +292,7 @@ def analysis(sip_id):
     analysis_url = driver.current_url
     print("\n********************************************************************************")
     print("\nFile Analysis, Validation, and Transformation")
-    print(f"Current analysis page is: {analysis_url}")
+    logging.debug(f"Current analysis page is: {analysis_url}")
     time.sleep(2)
 
     print("\nProcessing files")
@@ -316,7 +332,7 @@ def analysis(sip_id):
             failed_files = elem.find_elements_by_xpath("//*[@id='failed-transformation-files-collapse']/div")
             # //*[@id="failed-transformation-files-collapse"]/div/div[1]/button
             # THIS is not finsished!!!
-            print(f"DEBUG: number of failed files {len(failed_files)}")
+            logger.debug(f"Number of failed files {len(failed_files)}")
             for failure in failed_files:
                 button = failure.find_element_by_tag_name('button')
                 button.click()
@@ -350,19 +366,19 @@ def analysis(sip_id):
         elif j["NavigationState"]["NavigationSteps"][2]["Complete"] == False:
             for i, item in enumerate(j["Files"]):
                 if j["Files"][i]["HasAnalysisFailed"]:
-                    print(j["Files"][i]["Name"], "has failed analysis")
+                    logger.debug(f'{j["Files"][i]["Name"]} has failed analysis')
                     retry_analysis("Analysis", analysis_url, sip_id)
                 elif j["Files"][i]["HasCopyToServerFailed"]:
-                    print(j["Files"][i]["Name"], "has failed to copy to the server")
+                    logger.debug(f'{j["Files"][i]["Name"]} has failed to copy to the server')
                     retry_analysis("Copy", analysis_url, sip_id)
                 elif j["Files"][i]["HasTransformationFailed"]:
-                    print(j["Files"][i]["Name"], "has failed transformation")
+                    print(f'{j["Files"][i]["Name"]} has failed transformation')
                     retry_analysis("Transform", analysis_url, sip_id)
 
         # If the SIP tool cannot connect to the SQL server it returns a JSON with an error message
         else: 
             if "An error has occurred." in j["Message"]:
-                print("There is problem connecting to the SIP database")
+                logger.debug("There is problem connecting to the SIP database")
         wait_with_spinner(30)
         
       
@@ -372,7 +388,7 @@ def analysis(sip_id):
     analysis_json_update['ModifiedByUsername'] = j['UserName']
     analysis_json_update['Status'] = 1
     analysis_json_update['Complete'] = True
-    analysis_json_update['Modified'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    analysis_json_update['Modified'] = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
     user_id = j['UserId']
 
@@ -411,7 +427,6 @@ def wait_with_spinner(seconds):
 def physical_structure(physical_structure_url, sip_id, item_format):
     # Haven't arrived via clicking "Continue" from last step
     # so...
-    print("What's the problem?", site + "/" + physical_structure_url)
     driver.get(site + "/" + physical_structure_url)
     handle_logout("Physical Structure", "/Steps/Physical/", sip_id)
 
@@ -491,7 +506,8 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
                     for _ in node['devices']:
                             if _['deviceType'] == "Tape recorder":
                                 _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
-
+        else:
+            raise KeyError
     # Set the EQ type of the tape Recorder
     if eq != None:
         for node in d['processMetadata'][0]['children']:
@@ -499,7 +515,8 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
                     for _ in node['devices']:
                             if _['deviceType'] == "Tape recorder":
                                 _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
-
+        else:
+            raise KeyError
 
 
     dest_process_metadata = json.dumps(d)
@@ -541,8 +558,6 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     
    # Page is ready when this dropdown for custom SIP metadata is available
     driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='process-metadata-form']/div[3]/button")))
-
-    
     driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))).click()
     driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='page-content-wrapper']/div[2]/div[2]/nav/button[3]"))).click()
 
@@ -551,7 +566,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     print("\n********************************************************************************")
     print("\nProcess Metadata")
     print("\n")
-    print(f"Process Metadata complete for {site}/Steps/Process/{dest_sip_id}/{dest_step_id}")
+    logger.info(f"Process Metadata complete for {site}/Steps/Process/{dest_sip_id}/{dest_step_id}")
     
     # Wait for the search box on the Search SAMI Recordings page
     # before starting next function otherwise you get an error modal dialog
@@ -593,7 +608,17 @@ def getSIPStobuild():
     return SIPS
 
 def main():
-    SIP_tool_login(site, *ADloginDetails())
+    user, password = ADloginDetails()
+
+    #Set up webdriver
+    global driver 
+    driver = webdriver.Chrome()
+    driver.maximize_window()
+    #driver.implicitly_wait(10)
+    driver.wait = WebDriverWait(driver, 120)
+
+
+    SIP_tool_login(site, user, password)
     SIPS = getSIPStobuild()
     failed_sips = []
     print()
@@ -602,14 +627,11 @@ def main():
     for sip in SIPS:
         retry_count = 0
         shelfmark, grouping, directory, filemask, item_format, pm_date, reference_sip, speed, eq, notes = sip
-        print(f"Procesing current shelfmark {shelfmark}")
+        logger.info(f"Procesing current shelfmark {shelfmark}")
 
-    # shelfmark = "W1CDR0000211"
-    # directory = "dir_52"
-    # filemask = "0211X"
         try:
             sip_id = createNewsip(shelfmark)
-            print(f"SIP ID for shelfmark {shelfmark} is {sip_id}")
+            logger.info(f"SIP ID for shelfmark {shelfmark} is {sip_id}")
             process_metadata_date = source_files(directory, filemask, sip_id, pm_date)
             
             
@@ -625,11 +647,12 @@ def main():
 
     if len(failed_sips) == 0:
         print("\n********************************************************************************")
-        print("All SIPs completed.")
+        logger.info("All SIPs completed.")
     else:
         print("\n********************************************************************************")
         print("The following SIPs did not complete sucessfully:\n", )
         print(*failed_sips, sep="\n")
+        logger.debug("Failures: %s", failed_sips)
             
 
 

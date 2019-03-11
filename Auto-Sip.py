@@ -176,6 +176,9 @@ def source_files(directory, file_pattern, sip_id, pm_date):
     # Arrive here by clicking "Complete" in previous page
     handle_logout("Select Files", "/Steps/Select/", sip_id)
 
+    print("\n********************************************************************************")
+    print("\nSelect Source Files")
+
     path =f"\\{directory}"
     logger.debug("Loading files from %s", directory)
 
@@ -243,36 +246,29 @@ def source_files(directory, file_pattern, sip_id, pm_date):
                 #print(filename)
                 file_names.append(filename)
         item.click()
+    logger.info(f"Found {len(file_names)} file(s)")
+    logger.info("Here is the list of files: %s", *file_names)
     
     
     if pm_date == "No":
         # Use the date specified in the reference SIP
         process_metadata_date = False
+        print("\nUsing the date from the reference SIP")
+
     elif pm_date == "Yes":
         # use file creation date
         process_metadata_date = date_tally(file_text)
+        print("\nusing the date taken from the file's modification date")
     else:
         if isinstance(pm_date, datetime.datetime):
             process_metadata_date = pm_date
         else:
-            logger.debug(f"{pm_date} is not a valid date.")
-            
-
-
-    # elif pm_date == 
-
-    print("\n********************************************************************************")
-    print("\nSelect Source Files")
-    logger.info(f"Found {len(file_names)} file(s)")
-    logger.info("Here is the list of files: %s", *file_names)
-    # process_metadata_date = date_tally(file_text)
-    # if pm_date == "No":
-    #     process_metadata_date = False
+            logger.debug(f"{pm_date} is not a valid date. Defaulting to file creation date")
+            process_metadata_date = date_tally(file_text)
     
     logger.info(f"The date for the Process Metadata will be {process_metadata_date}")
-    print("\nThis is taken from the file's modification date")
-    print("If you wish to specifiy another date or use the reference SIP's date.")
-    print("Use the 'Date' column in the SIPS.xlsx")
+    
+    print("If you wish to specifiy another date, use the 'Date' column in the SIPS.xlsx")
 
 
     time.sleep(1)
@@ -499,6 +495,8 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     last_proc = d['processMetadata'][0]['children'][-1]
     last_proc['devices'][-1]['notes'] = notes
 
+    # The use of else in a for loop is unusual! 
+    # See https://stackoverflow.com/questions/9979970/why-does-python-use-else-after-for-and-while-loops
     # Sets the speed of the Tape Recorder
     if speed != None:
         for node in d['processMetadata'][0]['children']:
@@ -506,17 +504,18 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
                     for _ in node['devices']:
                             if _['deviceType'] == "Tape recorder":
                                 _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
-        else:
-            raise KeyError
+                                break
+                            else:
+                                raise KeyError(f"Process Metadata doesn't appear to have a tape recorder to set the speed of {speed}")
     # Set the EQ type of the tape Recorder
     if eq != None:
         for node in d['processMetadata'][0]['children']:
             if node['processType'] == "Migration":
                     for _ in node['devices']:
                             if _['deviceType'] == "Tape recorder":
-                                _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
-        else:
-            raise KeyError
+                                _['parameters']['Tape recorder']['replaySpeed']['value'] = eq
+                            else:
+                                raise KeyError(f"Process Metadata doesn't appear to have a tape recorder to set the equalisation type of {eq}")
 
 
     dest_process_metadata = json.dumps(d)

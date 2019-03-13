@@ -3,6 +3,9 @@ import time
 import openpyxl
 import os
 import json
+import sys
+from tkinter import *
+from tkinter import filedialog
 import warnings
 import requests
 from selenium import webdriver
@@ -24,8 +27,8 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-site="https://avsip.ad.bl.uk"
-#site="https://v12l-avsip.ad.bl.uk:8445"
+#site="https://avsip.ad.bl.uk"
+site="https://v12l-avsip.ad.bl.uk:8445"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -171,7 +174,7 @@ def date_tally(filenames):
     return tally_dates[-1][0]
 
 
-def source_files(directory, file_pattern, sip_id, pm_date):
+def source_files(directory, file_patterns, sip_id, pm_date):
     # First check this is the right page
     # Arrive here by clicking "Complete" in previous page
     handle_logout("Select Files", "/Steps/Select/", sip_id)
@@ -214,40 +217,44 @@ def source_files(directory, file_pattern, sip_id, pm_date):
     file_pattern_box = driver.find_element_by_xpath("//*[@id='filePatternBox']")
     file_pattern_box.click()
     # file_pattern will be differnt depending on old or new file name schema
-    file_pattern_box.send_keys(file_pattern)
-    file_pattern_box.send_keys(Keys.TAB)
-    driver.find_element_by_xpath("//*[@id='main-content']/div[3]/div/button").click()
-    driver.wait.until(EC.presence_of_element_located((By.ID, "accordion")))
-    
-    # Throw an AssertionError if no files are found
-    any_files = driver.find_element_by_xpath('//*[contains(text(), "dirs")]')
-    assert (not "0 files" in any_files.text), f"Sorry no files found with filename {file_pattern} at {path}"
-
-    # The files are displayed in a <ul>
-    # There are two elements with class "list-group sami-container"
-    fileResults = driver.find_elements_by_class_name("sami-container")
-    files = fileResults[1].find_elements_by_tag_name("li")
     global file_names
     file_names = []
+    for file_pattern in file_patterns:
+        file_pattern_box.clear()
+        file_pattern_box.send_keys(file_pattern)
+        file_pattern_box.send_keys(Keys.TAB)
+        driver.find_element_by_xpath("//*[@id='main-content']/div[3]/div/button").click()
+        if len(file_patterns) != 1:
+            time.sleep(4)
+        driver.wait.until(EC.presence_of_element_located((By.ID, "accordion")))
+    
+        # Throw an AssertionError if no files are found
+        any_files = driver.find_element_by_xpath('//*[contains(text(), "dirs")]')
+        assert (not "0 files" in any_files.text), f"Sorry no files found with filename {file_pattern} at {path}"
 
-    # Select all the files
-    # Can use the "Add All" button in the new SIP tool
-    # but this way we get file creation date to use in date_tally()
-    file_text = []
-    for item in files:
-        file_text.append(item.text)
-        text = item.text
-        #print(text)
-        text = text.splitlines()
-        path_fields = text[0].split("\\")
-        for field in path_fields:
-            if field.endswith(".wav") or field.endswith(".WAV"):
-                filename = field
-                #print(filename)
-                file_names.append(filename)
-        item.click()
-    logger.info(f"Found {len(file_names)} file(s)")
-
+        # The files are displayed in a <ul>
+        # There are two elements with class "list-group sami-container"
+        fileResults = driver.find_elements_by_class_name("sami-container")
+        files = fileResults[1].find_elements_by_tag_name("li")
+    
+        # Select all the files
+        # Can use the "Add All" button in the new SIP tool
+        # but this way we get file creation date to use in date_tally()
+        file_text = []
+        for item in files:
+            file_text.append(item.text)
+            text = item.text
+            #print(text)
+            text = text.splitlines()
+            path_fields = text[0].split("\\")
+            for field in path_fields:
+                if field.endswith(".wav") or field.endswith(".WAV"):
+                    filename = field
+                    #print(filename)
+                    file_names.append(filename)
+            item.click()
+        logger.info(f"Found {len(file_names)} file(s)")
+  
     #logger.info("Here is the list of files: %s", *file_names) doesn't work with *var
     # https://stackoverflow.com/questions/51477200/how-to-use-logger-to-print-a-list-in-just-one-line-in-python
     logger.info("Here is the list of files: {}".format(' '.join(map(str, file_names))))
@@ -605,19 +612,25 @@ def getSIPStobuild():
             #filemask = shelfmark.value[-4:] + "X"
             # Need removed zero padding from shelfmark
             filemask = (shelfmark.value).replace("/", "-")
-            filemask = filemask.replace(" ", "-")
+            filemask = [filemask.replace(" ", "-")]
         else:
-            filemask = filename.value
+            filemask = filename.value.split(";")
         l = [shelfmark.value, grouping, directory.value, filemask, item_format.value, pm_date.value, reference_sip.value, speed.value, eq.value, notes.value]
         SIPS.append(l)
     return SIPS
 
 def main():
+    #root = Tk()
+    #root.filename = filedialog.askopenfilename(initialdir="c:\\", title="Select SIP list")
+    #print(root.filename)
     user, password = ADloginDetails()
 
     #Set up webdriver
-    global driver 
-    driver = webdriver.Chrome()
+    global driver
+    if getattr( sys, 'frozen', False ) :
+        driver = webdriver.Chrome(os.path.join(sys._MEIPASS, "bin", "chromedriver.exe"))
+    else:
+        driver = webdriver.Chrome()
     driver.maximize_window()
     #driver.implicitly_wait(10)
     driver.wait = WebDriverWait(driver, 120)
@@ -631,7 +644,7 @@ def main():
     global retry_count
     for sip in SIPS:
         retry_count = 0
-        shelfmark, grouping, directory, filemask, item_format, pm_date, reference_sip, speed, eq, notes = sip
+        shelfmark, grouping, directory, filemasks, item_format, pm_date, reference_sip, speed, eq, notes = sip
         print("\n\n\n\n\n")
         print("\n********************************************************************************")
         print("Creating SIP")
@@ -640,8 +653,8 @@ def main():
         try:
             sip_id = createNewsip(shelfmark)
             logger.info(f"SIP ID for shelfmark {shelfmark} is {sip_id}")
-            process_metadata_date = source_files(directory, filemask, sip_id, pm_date)
-            
+
+            process_metadata_date = source_files(directory, filemasks, sip_id, pm_date)
             
             # elif pm_date == datetime take from the spreadsheet use that date for process metadata
             # else use tallydate() 

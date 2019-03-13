@@ -509,7 +509,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
                     for _ in node['devices']:
                             if _['deviceType'] == "Tape recorder":
                                 _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
-                                break
+                                # break
                             # else:
                             #     raise KeyError(f"Process Metadata doesn't appear to have a tape recorder to set the speed of {speed}")
     # Set the EQ type of the tape Recorder
@@ -519,7 +519,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
                     for _ in node['devices']:
                             if _['deviceType'] == "Tape recorder":
                                 _['parameters']['Tape recorder']['equalisation']['value'] = eq
-                                break
+                                # break
                             # else:
                             #     raise KeyError(f"Process Metadata doesn't appear to have a tape recorder to set the equalisation type of {eq}")
 

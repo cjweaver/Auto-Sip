@@ -24,8 +24,8 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-#site="https://avsip.ad.bl.uk"
-site="https://v12l-avsip.ad.bl.uk:8445"
+site="https://avsip.ad.bl.uk"
+#site="https://v12l-avsip.ad.bl.uk:8445"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -247,9 +247,13 @@ def source_files(directory, file_pattern, sip_id, pm_date):
                 file_names.append(filename)
         item.click()
     logger.info(f"Found {len(file_names)} file(s)")
-    logger.info("Here is the list of files: %s", *file_names)
+
+    #logger.info("Here is the list of files: %s", *file_names) doesn't work with *var
+    # https://stackoverflow.com/questions/51477200/how-to-use-logger-to-print-a-list-in-just-one-line-in-python
+    logger.info("Here is the list of files: {}".format(' '.join(map(str, file_names))))
     
-    
+    # These need to sanitised a bit - strip whitespace, captalise etc
+    # As they are coming from the spreadsheet.
     if pm_date == "No":
         # Use the date specified in the reference SIP
         process_metadata_date = False
@@ -466,6 +470,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     src_url = "{0}/api/SIP/{1}".format(site, src_sip_id)
     #DEBUG print("getting information for sip", src_sip_id)
     src_req = requests.get(src_url, verify=False)
+    src_req.encoding = src_req.apparent_encoding
     src_json = src_req.json()
     
     # get information for the dest
@@ -505,17 +510,18 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
                             if _['deviceType'] == "Tape recorder":
                                 _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
                                 break
-                            else:
-                                raise KeyError(f"Process Metadata doesn't appear to have a tape recorder to set the speed of {speed}")
+                            # else:
+                            #     raise KeyError(f"Process Metadata doesn't appear to have a tape recorder to set the speed of {speed}")
     # Set the EQ type of the tape Recorder
     if eq != None:
         for node in d['processMetadata'][0]['children']:
             if node['processType'] == "Migration":
                     for _ in node['devices']:
                             if _['deviceType'] == "Tape recorder":
-                                _['parameters']['Tape recorder']['replaySpeed']['value'] = eq
-                            else:
-                                raise KeyError(f"Process Metadata doesn't appear to have a tape recorder to set the equalisation type of {eq}")
+                                _['parameters']['Tape recorder']['equalisation']['value'] = eq
+                                break
+                            # else:
+                            #     raise KeyError(f"Process Metadata doesn't appear to have a tape recorder to set the equalisation type of {eq}")
 
 
     dest_process_metadata = json.dumps(d)
@@ -626,6 +632,9 @@ def main():
     for sip in SIPS:
         retry_count = 0
         shelfmark, grouping, directory, filemask, item_format, pm_date, reference_sip, speed, eq, notes = sip
+        print("\n\n\n\n\n")
+        print("\n********************************************************************************")
+        print("Creating SIP")
         logger.info(f"Procesing current shelfmark {shelfmark}")
 
         try:

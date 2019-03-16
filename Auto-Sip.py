@@ -27,8 +27,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-#site="https://avsip.ad.bl.uk"
-site="https://v12l-avsip.ad.bl.uk:8445"
+site="https://avsip.ad.bl.uk"
+# # 
+# site="https://v12l-avsip.ad.bl.uk:8444"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -472,7 +473,7 @@ def physical_structure(physical_structure_url, sip_id, item_format):
     time.sleep(5)
 
 
-def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_metadata_date):
+def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_metadata_date, noise_reduction):
     # get information for the src
     src_url = "{0}/api/SIP/{1}".format(site, src_sip_id)
     #DEBUG print("getting information for sip", src_sip_id)
@@ -516,19 +517,24 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
                     for _ in node['devices']:
                             if _['deviceType'] == "Tape recorder":
                                 _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
-                                # break
-                            # else:
-                            #     raise KeyError(f"Process Metadata doesn't appear to have a tape recorder to set the speed of {speed}")
-    # Set the EQ type of the tape Recorder
+                                
     if eq != None:
         for node in d['processMetadata'][0]['children']:
             if node['processType'] == "Migration":
                     for _ in node['devices']:
                             if _['deviceType'] == "Tape recorder":
                                 _['parameters']['Tape recorder']['equalisation']['value'] = eq
-                                # break
-                            # else:
-                            #     raise KeyError(f"Process Metadata doesn't appear to have a tape recorder to set the equalisation type of {eq}")
+                            else:
+                                _['parameters']['Cassette recorder']['equalisation']['value'] = eq
+
+
+                              
+    if noise_reduction != None:
+        for node in d['processMetadata'][0]['children']:
+            if node['processType'] == "Migration":
+                    for _ in node['devices']:
+                            if _['deviceType'] == "Cassette recorder":
+                                _['parameters']['Cassette recorder']['noiseReduction']['value'] = noise_reduction
 
 
     dest_process_metadata = json.dumps(d)
@@ -600,7 +606,7 @@ def getSIPStobuild():
     next(rows)
     # Skip first row
     for row in rows:
-        shelfmark, grouping, filename, directory, item_format, pm_date, reference_sip, speed, eq, notes = row
+        shelfmark, grouping, filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes = row
         if shelfmark.value == None:
             break
         if filename.value == None:
@@ -615,7 +621,7 @@ def getSIPStobuild():
             filemask = [filemask.replace(" ", "-")]
         else:
             filemask = filename.value.split(";")
-        l = [shelfmark.value, grouping, directory.value, filemask, item_format.value, pm_date.value, reference_sip.value, speed.value, eq.value, notes.value]
+        l = [shelfmark.value, grouping, directory.value, filemask, item_format.value, pm_date.value, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value]
         SIPS.append(l)
     return SIPS
 
@@ -644,7 +650,7 @@ def main():
     global retry_count
     for sip in SIPS:
         retry_count = 0
-        shelfmark, grouping, directory, filemasks, item_format, pm_date, reference_sip, speed, eq, notes = sip
+        shelfmark, grouping, directory, filemasks, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes = sip
         print("\n\n\n\n\n")
         print("\n********************************************************************************")
         print("Creating SIP")
@@ -661,7 +667,7 @@ def main():
 
             physical_structure_url = analysis(sip_id)
             physical_structure(physical_structure_url, sip_id, item_format) #pass the physical structure??
-            copy_processmetadata(reference_sip, sip_id, speed, eq, notes, process_metadata_date)
+            copy_processmetadata(reference_sip, sip_id, speed, eq, notes, process_metadata_date, noise_reduction)
         except Exception as e:
             failed_sips.append((shelfmark + ":  " + str(e)))
             continue

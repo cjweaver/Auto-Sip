@@ -1,0 +1,36 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+jobs:
+- job: 'Build'
+  trigger:
+  - master
+
+  pool:
+    vmImage: 'vs2017-win2016'
+
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.6'
+      architecture: 'x64'
+    
+  - task: PowerShell@2
+    inputs:
+      script: Invoke-WebRequest -Uri https://chromedriver.storage.googleapis.com/73.0.3683.68/chromedriver_win32.zip -OutFile chromedriver_win32.zip
+
+  - task: ExtractFiles@1
+    inputs:
+      archiveFilePatterns: '*.zip'
+      cleanDestinationFolder: false
+
+  - script: python -m pip install --upgrade pip pyinstaller
+    displayName: 'Install build tools'
+
+  - script: pip install -r requirements.txt
+    displayName: 'Install dependencies'
+
+  - script: pyinstaller -F --add-binary .\chromedriver.exe;bin Auto-Sip.py
+    displayName: 'Build the executable'

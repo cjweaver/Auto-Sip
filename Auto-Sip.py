@@ -27,9 +27,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-site="https://avsip.ad.bl.uk"
+# site="https://avsip.ad.bl.uk"
 # # 
-# site="https://v12l-avsip.ad.bl.uk:8444"
+site="https://v12l-avsip.ad.bl.uk:8444"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -226,7 +226,7 @@ def source_files(directory, file_patterns, sip_id, pm_date):
         file_pattern_box.send_keys(Keys.TAB)
         driver.find_element_by_xpath("//*[@id='main-content']/div[3]/div/button").click()
         if len(file_patterns) != 1:
-            time.sleep(4)
+            time.sleep(2)
         driver.wait.until(EC.presence_of_element_located((By.ID, "accordion")))
     
         # Throw an AssertionError if no files are found
@@ -253,21 +253,22 @@ def source_files(directory, file_patterns, sip_id, pm_date):
                     filename = field
                     #print(filename)
                     file_names.append(filename)
+            time.sleep(1)
             item.click()
-        logger.info(f"Found {len(file_names)} file(s)")
+    logger.info(f"Found {len(file_names)} file(s)")
   
     #logger.info("Here is the list of files: %s", *file_names) doesn't work with *var
     # https://stackoverflow.com/questions/51477200/how-to-use-logger-to-print-a-list-in-just-one-line-in-python
-    logger.info("Here is the list of files: {}".format(' '.join(map(str, file_names))))
+    logger.info("\nHere is the list of files: \n{}".format('\n '.join(map(str, file_names))))
     
     # These need to sanitised a bit - strip whitespace, captalise etc
     # As they are coming from the spreadsheet.
-    if pm_date == "No":
+    if pm_date == "NO":
         # Use the date specified in the reference SIP
         process_metadata_date = False
         print("\nUsing the date from the reference SIP")
 
-    elif pm_date == "Yes":
+    elif pm_date == "YES":
         # use file creation date
         process_metadata_date = date_tally(file_text)
         print("\nusing the date taken from the file's modification date")
@@ -609,9 +610,10 @@ def getSIPStobuild():
     next(rows)
     # Skip first row
     for row in rows:
-        shelfmark, grouping, filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes = row
+        shelfmark, filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes = row
         if shelfmark.value == None:
             break
+        
         if filename.value == None:
             #print(row)
             #print("This is the current shelfmark", shelfmark.value)
@@ -623,8 +625,13 @@ def getSIPStobuild():
             filemask = (shelfmark.value).replace("/", "-")
             filemask = [filemask.replace(" ", "-")]
         else:
-            filemask = filename.value.split(";")
-        l = [shelfmark.value, directory.value, filemask, item_format.value, pm_date.value, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value]
+            # filemask = filename.value.split(";")
+            filemask = [x.replace("/", "-") for x in list(map(str.strip, filename.value.split(";")))]
+        
+        if not isinstance(pm_date.value, datetime.datetime):
+            pm_date = pm_date.value.strip().upper()
+                    
+        l = [shelfmark.value, directory.value, filemask, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value]
         SIPS.append(l)
     return SIPS
 

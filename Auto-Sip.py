@@ -28,8 +28,8 @@ import urllib3
 urllib3.disable_warnings()
 
 # site="https://avsip.ad.bl.uk"
-# # 
-site="https://v12l-avsip.ad.bl.uk:8444"
+# # # # 
+site="https://v12l-avsip.ad.bl.uk:8445"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -631,7 +631,7 @@ def getSIPStobuild():
         if not isinstance(pm_date.value, datetime.datetime):
             pm_date = pm_date.value.strip().upper()
                     
-        l = [shelfmark.value, directory.value, filemask, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value]
+        l = [shelfmark.value, directory.value, filemask, item_format.value, pm_date.value, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value]
         SIPS.append(l)
     return SIPS
 
@@ -643,11 +643,24 @@ def main():
 
     #Set up webdriver
     global driver
+    # options = webdriver.ChromeOptions()
+    # options.add_argument("--window-size=1920,1080")
+    # options.add_argument("--disable-gpu")
+    # options.add_argument("--disable-extensions")
+    # # options.setExperimentalOption("useAutomationExtension", false)
+    # # options.addArguments("--proxy-server='direct://'")
+    # # options.addArguments("--proxy-bypass-list=*")
+    options.add_argument("--start-maximized")
+    # # options.add_argument("--headless")
+
+
     if getattr( sys, 'frozen', False ) :
         driver = webdriver.Chrome(os.path.join(sys._MEIPASS, "bin", "chromedriver.exe"))
     else:
-        driver = webdriver.Chrome()
+        # driver = webdriver.Chrome()
+        driver = webdriver.Chrome(chrome_options=options)
     driver.maximize_window()
+    
     #driver.implicitly_wait(10)
     driver.wait = WebDriverWait(driver, 120)
 

@@ -4,8 +4,8 @@ import openpyxl
 import os
 import json
 import sys
-from tkinter import *
-from tkinter import filedialog
+# from tkinter import *
+# from tkinter import filedialog
 import warnings
 import requests
 from selenium import webdriver
@@ -20,6 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 #from login import site, user, password
 import getpass
+from prompt_toolkit import prompt
 import itertools, sys
 import logging
 
@@ -27,9 +28,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-# site="https://avsip.ad.bl.uk"
+site="https://avsip.ad.bl.uk"
 # # # # 
-site="https://v12l-avsip.ad.bl.uk:8445"
+# site="https://v12l-avsip.ad.bl.uk:8445"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -95,8 +96,8 @@ def ADloginDetails():
     global password
     print("\n********************************************************************************")
     print("\nLogin\n")
-    user = input("Please enter your AD Username: ")
-    password = getpass.getpass(prompt="Please enter your password: ")
+    user = input("\nPlease enter your AD Username: ")
+    password = prompt("\nPlease enter your password: ", is_password=True)
     print("\n********************************************************************************\n")
     return user, password
 
@@ -253,7 +254,7 @@ def source_files(directory, file_patterns, sip_id, pm_date):
                     filename = field
                     #print(filename)
                     file_names.append(filename)
-            time.sleep(1)
+            time.sleep(.200)
             item.click()
     logger.info(f"Found {len(file_names)} file(s)")
   
@@ -643,7 +644,7 @@ def main():
 
     #Set up webdriver
     global driver
-    # options = webdriver.ChromeOptions()
+    options = webdriver.ChromeOptions()
     # options.add_argument("--window-size=1920,1080")
     # options.add_argument("--disable-gpu")
     # options.add_argument("--disable-extensions")

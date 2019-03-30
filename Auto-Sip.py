@@ -266,8 +266,8 @@ def source_files(directory, file_patterns, sip_id, pm_date):
     # As they are coming from the spreadsheet.
     if pm_date == "NO":
         # Use the date specified in the reference SIP
-        process_metadata_date = False
-        print("\nUsing the date from the reference SIP")
+        process_metadata_date = "N/A"
+        print("\nUsing the dates specified in the reference SIP process metadata page")
 
     elif pm_date == "YES":
         # use file creation date
@@ -644,18 +644,27 @@ def getSIPStobuild():
             # Make sure no other characters are in the pm_date variable i.e ".    YES" by mistake
             if "YES" in pm_date:
                 pm_date = "YES"
-            else:
+            elif "NO" in pm_date:
                 pm_date = "NO"
-
+            
                     
         l = [shelfmark.value, directory, filemask, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value]
         SIPS.append(l)
     return SIPS
 
 def main():
-    #root = Tk()
-    #root.filename = filedialog.askopenfilename(initialdir="c:\\", title="Select SIP list")
-    #print(root.filename)
+    # root = Tk()
+    # root.filename = filedialog.askopenfilename(initialdir="c:\\", title="Select SIP list")
+    # print(root.filename)
+    try:
+        SIPS = getSIPStobuild()
+    except FileNotFoundError as e:
+        print("\nUnable to find the SIPS spreadsheet\n", e)
+        input("Press q to quit: ")
+        quit()
+        
+    
+    
     user, password = ADloginDetails()
 
     #Set up webdriver
@@ -683,7 +692,7 @@ def main():
 
 
     SIP_tool_login(site, user, password)
-    SIPS = getSIPStobuild()
+    
     failed_sips = []
     print()
     # DEBUG print(SIPS)

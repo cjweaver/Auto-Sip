@@ -28,9 +28,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-site="https://avsip.ad.bl.uk"
+# site="https://avsip.ad.bl.uk"
 # # # # 
-# site="https://v12l-avsip.ad.bl.uk:8445"
+site="https://v12l-avsip.ad.bl.uk:8445"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -260,7 +260,7 @@ def source_files(directory, file_patterns, sip_id, pm_date):
   
     #logger.info("Here is the list of files: %s", *file_names) doesn't work with *var
     # https://stackoverflow.com/questions/51477200/how-to-use-logger-to-print-a-list-in-just-one-line-in-python
-    logger.info("\nHere is the list of files: \n{}".format('\n '.join(map(str, file_names))))
+    logger.info("\nHere is the list of files: \n {}".format('\n '.join(map(str, file_names))))
     
     # These need to sanitised a bit - strip whitespace, captalise etc
     # As they are coming from the spreadsheet.
@@ -272,15 +272,16 @@ def source_files(directory, file_patterns, sip_id, pm_date):
     elif pm_date == "YES":
         # use file creation date
         process_metadata_date = date_tally(file_text)
-        print("\nusing the date taken from the file's modification date")
+        print("\nUsing the date taken from the file's modification date")
     else:
         if isinstance(pm_date, datetime.datetime):
             process_metadata_date = pm_date
+            print("Using the date manually specified in the spreadsheet")
         else:
             logger.debug(f"{pm_date} is not a valid date. Defaulting to file creation date")
             process_metadata_date = date_tally(file_text)
     
-    logger.info(f"The date for the Process Metadata will be {process_metadata_date}")
+    logger.info(f"\nThe date for the Process Metadata will be {process_metadata_date}")
     
     print("If you wish to specifiy another date, use the 'Date' column in the SIPS.xlsx")
 
@@ -600,7 +601,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
 
 def getSIPStobuild():
     desktop = os.path.join(os.environ['USERPROFILE'], 'Desktop')
-    print(f"Reading the SIPS.xlsx spreadsheet from {desktop}")
+    print(f"\nReading the SIPS.xlsx spreadsheet from {desktop}")
     os.chdir(desktop)
 
     wb = openpyxl.load_workbook('SIPS.xlsx')
@@ -608,13 +609,14 @@ def getSIPStobuild():
     rows = ws.rows
     #print(rows)
     SIPS = []
+    # Skip first row where the headings ("shelfmark", "Directory") are stored
     next(rows)
-    # Skip first row
+    
     for row in rows:
         shelfmark, filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes = row
         if shelfmark.value == None:
+            # Stop reading the spreadsheet once you hit a blank shelfmark cell
             break
-        
         if filename.value == None:
             #print(row)
             #print("This is the current shelfmark", shelfmark.value)
@@ -628,11 +630,25 @@ def getSIPStobuild():
         else:
             # filemask = filename.value.split(";")
             filemask = [x.replace("/", "-") for x in list(map(str.strip, filename.value.split(";")))]
+            # Strip any blank str from the filemask list. filter does bool(item) on filemask and only passes True items.
+            # filter(None, item) - If None, the function defaults to Identity function - which returns false if any elements are false
+            filemask = list(filter(None, filemask))
         
-        if not isinstance(pm_date.value, datetime.datetime):
+        dir_parts = list(map(str.strip, directory.value.split("\\")))
+        directory = os.path.join(*dir_parts)
+        
+        if isinstance(pm_date.value, datetime.datetime):
+            pm_date = pm_date.value
+        else:
             pm_date = pm_date.value.strip().upper()
+            # Make sure no other characters are in the pm_date variable i.e ".    YES" by mistake
+            if "YES" in pm_date:
+                pm_date = "YES"
+            else:
+                pm_date = "NO"
+
                     
-        l = [shelfmark.value, directory.value, filemask, item_format.value, pm_date.value, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value]
+        l = [shelfmark.value, directory, filemask, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value]
         SIPS.append(l)
     return SIPS
 
@@ -686,8 +702,7 @@ def main():
 
             process_metadata_date = source_files(directory, filemasks, sip_id, pm_date)
             
-            # elif pm_date == datetime take from the spreadsheet use that date for process metadata
-            # else use tallydate() 
+          
 
             physical_structure_url = analysis(sip_id)
             physical_structure(physical_structure_url, sip_id, item_format) #pass the physical structure??

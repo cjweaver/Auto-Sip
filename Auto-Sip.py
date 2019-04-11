@@ -28,9 +28,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-# site="https://avsip.ad.bl.uk"
-# # # # 
-site="https://v12l-avsip.ad.bl.uk:8445"
+site="https://avsip.ad.bl.uk"
+# # # # # 
+# site="https://v12l-avsip.ad.bl.uk:8445"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -126,10 +126,15 @@ def createNewsip(shelfmark, grouping="None"):
     sip = driver.wait.until(EC.visibility_of_element_located((By.ID, "searchBox")))
     sip.click()
     sip.send_keys(shelfmark)
-    # catch the modal here
-    #
-    #
+    # Click "Search" button
     driver.find_element_by_xpath("//*[@id='main-content']/div[1]/div[1]/button").click()
+    
+    # Test to see if the search returns zero results
+    results = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//*[@id="main-content"]/div[2]/div[1]/h4[2]/span'))).text
+    if "Please try again" in results:
+        # Raise exception 
+        pass 
+    
     # Wait until the 1st result is found before continuing
     driver.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "list-group-item")))
     # Select 1st found result
@@ -180,10 +185,12 @@ def source_files(directory, file_patterns, sip_id, pm_date):
     # First check this is the right page
     # Arrive here by clicking "Complete" in previous page
     handle_logout("Select Files", "/Steps/Select/", sip_id)
+    
 
     print("\n********************************************************************************")
     print("\nSelect Source Files")
 
+    
     path =f"\\{directory}"
     logger.debug("Loading files from %s", directory)
 
@@ -192,6 +199,9 @@ def source_files(directory, file_patterns, sip_id, pm_date):
     s1 = ui.Select(driver.wait.until(EC.element_to_be_clickable((By.ID, 'currentSourceBox'))))
     #s1 = ui.Select(driver.find_element_by_id('currentSourceBox'))
     # Select another directory before the one you want to allow KnockoutJS to populate search box with the path.
+
+    
+
 
     s1.select_by_index(0)
     time.sleep(1)
@@ -219,6 +229,8 @@ def source_files(directory, file_patterns, sip_id, pm_date):
     file_pattern_box = driver.find_element_by_xpath("//*[@id='filePatternBox']")
     file_pattern_box.click()
     # file_pattern will be differnt depending on old or new file name schema
+
+    
     global file_names
     file_names = []
     for file_pattern in file_patterns:
@@ -281,7 +293,7 @@ def source_files(directory, file_patterns, sip_id, pm_date):
             logger.debug(f"{pm_date} is not a valid date. Defaulting to file creation date")
             process_metadata_date = date_tally(file_text)
     
-    logger.info(f"\nThe date for the Process Metadata will be {process_metadata_date}")
+    logger.info(f"The date for the Process Metadata will be {process_metadata_date}")
     
     print("If you wish to specifiy another date, use the 'Date' column in the SIPS.xlsx")
 
@@ -628,7 +640,7 @@ def getSIPStobuild():
             filemask = (shelfmark.value).replace("/", "-")
             filemask = [filemask.replace(" ", "-")]
         else:
-            # filemask = filename.value.split(";")
+            filestr = str(filename.value)
             filemask = [x.replace("/", "-") for x in list(map(str.strip, filename.value.split(";")))]
             # Strip any blank str from the filemask list. filter does bool(item) on filemask and only passes True items.
             # filter(None, item) - If None, the function defaults to Identity function - which returns false if any elements are false
@@ -673,19 +685,17 @@ def main():
     # options.add_argument("--window-size=1920,1080")
     # options.add_argument("--disable-gpu")
     # options.add_argument("--disable-extensions")
-    # # options.setExperimentalOption("useAutomationExtension", false)
-    # # options.addArguments("--proxy-server='direct://'")
-    # # options.addArguments("--proxy-bypass-list=*")
+  
     options.add_argument("--start-maximized")
-    # # options.add_argument("--headless")
+    # options.add_argument("--headless")
 
 
     if getattr( sys, 'frozen', False ) :
-        driver = webdriver.Chrome(os.path.join(sys._MEIPASS, "bin", "chromedriver.exe"))
+        driver = webdriver.Chrome(executable_path=os.path.join(sys._MEIPASS, "bin", "chromedriver.exe"), chrome_options=options)
     else:
         # driver = webdriver.Chrome()
         driver = webdriver.Chrome(chrome_options=options)
-    driver.maximize_window()
+    # driver.maximize_window()
     
     #driver.implicitly_wait(10)
     driver.wait = WebDriverWait(driver, 120)

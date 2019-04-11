@@ -3,7 +3,7 @@ import json
 import re
 from urllib.parse import urlparse
 from urllib.parse import quote_plus
-from login import site as sip_website
+
 
 
 EASY_TEST_SHELFMARK = 'C125 / 13'
@@ -26,7 +26,7 @@ def search_request(shelfmark):
     start = 0
     n_rows = 10
     while True:
-        r = requests.get(f'{sip_website}/api/SearchSIPs/null/{sip_to_look_up}/{start}/{n_rows}', verify = False)
+        r = requests.get(f'https://avsip.ad.bl.uk/api/SearchSIPs/null/{sip_to_look_up}/{start}/{n_rows}', verify = False)
 
         print("Requesting", r.url)
         print("Return code was", r.status_code)
@@ -51,5 +51,7 @@ def search_request(shelfmark):
 
 # sip_id = search_request(EASY_TEST_SHELFMARK) 
 # print("Easy test got sip_id", sip_id)
-sip_id = search_request(HARD_TEST_SHELFMARK) 
+
+while True:
+    sip_id = search_request(input("Enter a shelf mark to search for: "))
 print("Hard test got sip_id", sip_id)

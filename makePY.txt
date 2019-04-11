@@ -1,0 +1,254 @@
+echo %path%
+cd C:\Program Files (x86)\Python36-32\Scripts
+set path=%path%;%cd%
+echo %path%
+cd C:\Users\cweaver\Documents\siptool\
+python -m pyinstaller
+python -m pyinstaller.exe
+pyinstaller
+pyinstaller -F --icon=app.ico --add-binary="chromedriver.exe;\bin"
+pyinstaller -F --icon=app.ico --add-binary="chromedriver.exe;\bin" Auto-Sip.py
+pyinstaller -F --icon=app.ico --add-binary="chromedriver.exe;.\bin" Auto-Sip.py
+pyinstaller -F --add-binary="chromedriver.exe;.\bin" Auto-Sip.py
+`$ doskey /history > makePY.txt
+doskey /history > makePY.txt
+
+
+Microsoft Windows [Version 6.1.7601]
+Copyright (c) 2009 Microsoft Corporation.  All rights reserved.
+
+C:\Users\cweaver>echo %path%
+C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\WINDOWS\system32;C:\
+WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\
+PROGRA~1\CONDUS~1\DISKEE~1\;C:\webdriver;C:\Program Files\Microsoft VS Code\bin;
+C:\Program Files (x86)\Python36-32;C:\Program Files (x86)\Python36-32\Lib;C:\Pro
+gram Files (x86)\Python36-32\DLLs;C:\Program Files (x86)\Python36-32\Lib\lib-tk;
+
+
+C:\Users\cweaver>cd C:\Program Files (x86)\Python36-32\Scripts
+
+C:\Program Files (x86)\Python36-32\Scripts>set path=%path%;%cd%
+
+C:\Program Files (x86)\Python36-32\Scripts>echo %path%
+C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\WINDOWS\system32;C:\
+WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\
+PROGRA~1\CONDUS~1\DISKEE~1\;C:\webdriver;C:\Program Files\Microsoft VS Code\bin;
+C:\Program Files (x86)\Python36-32;C:\Program Files (x86)\Python36-32\Lib;C:\Pro
+gram Files (x86)\Python36-32\DLLs;C:\Program Files (x86)\Python36-32\Lib\lib-tk;
+;C:\Program Files (x86)\Python36-32\Scripts
+
+C:\Program Files (x86)\Python36-32\Scripts>cd C:\Users\cweaver\Documents\siptool
+\
+
+C:\Users\cweaver\Documents\siptool>python -m pyinstaller
+C:\Program Files (x86)\Python36-32\python.exe: No module named pyinstaller
+
+C:\Users\cweaver\Documents\siptool>python -m pyinstaller.exe
+C:\Program Files (x86)\Python36-32\python.exe: Error while finding module specif
+ication for 'pyinstaller.exe' (ModuleNotFoundError: No module named 'pyinstaller
+')
+
+C:\Users\cweaver\Documents\siptool>pyinstaller
+usage: pyinstaller [-h] [-v] [-D] [-F] [--specpath DIR] [-n NAME]
+                   [--add-data <SRC;DEST or SRC:DEST>]
+                   [--add-binary <SRC;DEST or SRC:DEST>] [-p DIR]
+                   [--hidden-import MODULENAME]
+                   [--additional-hooks-dir HOOKSPATH]
+                   [--runtime-hook RUNTIME_HOOKS] [--exclude-module EXCLUDES]
+                   [--key KEY] [-d [{all,imports,bootloader,noarchive}]] [-s]
+                   [--noupx] [-c] [-w]
+                   [-i <FILE.ico or FILE.exe,ID or FILE.icns>]
+                   [--version-file FILE] [-m <FILE or XML>] [-r RESOURCE]
+                   [--uac-admin] [--uac-uiaccess] [--win-private-assemblies]
+                   [--win-no-prefer-redirects]
+                   [--osx-bundle-identifier BUNDLE_IDENTIFIER]
+                   [--runtime-tmpdir PATH] [--bootloader-ignore-signals]
+                   [--distpath DIR] [--workpath WORKPATH] [-y]
+                   [--upx-dir UPX_DIR] [-a] [--clean] [--log-level LEVEL]
+                   scriptname [scriptname ...]
+pyinstaller: error: the following arguments are required: scriptname
+
+C:\Users\cweaver\Documents\siptool>pyinstaller -F --icon=app.ico --add-binary="c
+hromedriver.exe;\bin"
+usage: pyinstaller [-h] [-v] [-D] [-F] [--specpath DIR] [-n NAME]
+                   [--add-data <SRC;DEST or SRC:DEST>]
+                   [--add-binary <SRC;DEST or SRC:DEST>] [-p DIR]
+                   [--hidden-import MODULENAME]
+                   [--additional-hooks-dir HOOKSPATH]
+                   [--runtime-hook RUNTIME_HOOKS] [--exclude-module EXCLUDES]
+                   [--key KEY] [-d [{all,imports,bootloader,noarchive}]] [-s]
+                   [--noupx] [-c] [-w]
+                   [-i <FILE.ico or FILE.exe,ID or FILE.icns>]
+                   [--version-file FILE] [-m <FILE or XML>] [-r RESOURCE]
+                   [--uac-admin] [--uac-uiaccess] [--win-private-assemblies]
+                   [--win-no-prefer-redirects]
+                   [--osx-bundle-identifier BUNDLE_IDENTIFIER]
+                   [--runtime-tmpdir PATH] [--bootloader-ignore-signals]
+                   [--distpath DIR] [--workpath WORKPATH] [-y]
+                   [--upx-dir UPX_DIR] [-a] [--clean] [--log-level LEVEL]
+                   scriptname [scriptname ...]
+pyinstaller: error: the following arguments are required: scriptname
+
+C:\Users\cweaver\Documents\siptool>pyinstaller -F --icon=app.ico --add-binary="c
+hromedriver.exe;\bin" Auto-Sip.py
+85 INFO: PyInstaller: 3.4
+86 INFO: Python: 3.6.4
+87 INFO: Platform: Windows-7-6.1.7601-SP1
+89 INFO: wrote C:\Users\cweaver\Documents\siptool\Auto-Sip.spec
+91 INFO: UPX is not available.
+92 INFO: Extending PYTHONPATH with paths
+['C:\\Users\\cweaver\\Documents\\siptool',
+ 'C:\\Users\\cweaver\\Documents\\siptool']
+93 INFO: checking Analysis
+108 INFO: Building because C:\Users\cweaver\Documents\siptool\Auto-Sip.py change
+d
+108 INFO: Initializing module dependency graph...
+110 INFO: Initializing module graph hooks...
+118 INFO: Analyzing base_library.zip ...
+4347 INFO: running Analysis Analysis-00.toc
+4378 INFO: Adding Microsoft.Windows.Common-Controls to dependent assemblies of f
+inal executable
+  required by c:\program files (x86)\python36-32\python.exe
+5411 INFO: Caching module hooks...
+5443 INFO: Analyzing C:\Users\cweaver\Documents\siptool\Auto-Sip.py
+7777 INFO: Processing pre-safe import module hook   urllib3.packages.six.moves
+10240 INFO: Processing pre-safe import module hook   six.moves
+14867 INFO: Loading module hooks...
+14867 INFO: Loading module hook "hook-certifi.py"...
+14871 INFO: Loading module hook "hook-cryptography.py"...
+15210 INFO: Loading module hook "hook-encodings.py"...
+15313 INFO: Loading module hook "hook-openpyxl.py"...
+15327 INFO: Loading module hook "hook-pydoc.py"...
+15330 INFO: Loading module hook "hook-selenium.py"...
+15337 INFO: Loading module hook "hook-xml.dom.domreg.py"...
+15340 INFO: Loading module hook "hook-xml.etree.cElementTree.py"...
+15341 INFO: Loading module hook "hook-xml.py"...
+15399 INFO: Looking for ctypes DLLs
+15437 INFO: Analyzing run-time hooks ...
+15446 INFO: Including run-time hook 'pyi_rth_multiprocessing.py'
+15479 INFO: Looking for dynamic libraries
+15697 INFO: Looking for eggs
+15698 INFO: Using Python library c:\program files (x86)\python36-32\python36.dll
+
+15698 INFO: Found binding redirects:
+[]
+15712 INFO: Warnings written to C:\Users\cweaver\Documents\siptool\build\Auto-Si
+p\warn-Auto-Sip.txt
+15942 INFO: Graph cross-reference written to C:\Users\cweaver\Documents\siptool\
+build\Auto-Sip\xref-Auto-Sip.html
+15991 INFO: Appending 'binaries' from .spec
+15995 INFO: checking PYZ
+16005 INFO: Building because toc changed
+16005 INFO: Building PYZ (ZlibArchive) C:\Users\cweaver\Documents\siptool\build\
+Auto-Sip\PYZ-00.pyz
+17649 INFO: Building PYZ (ZlibArchive) C:\Users\cweaver\Documents\siptool\build\
+Auto-Sip\PYZ-00.pyz completed successfully.
+17694 INFO: checking PKG
+17703 INFO: Building because toc changed
+17703 INFO: Building PKG (CArchive) PKG-00.pkg
+Cannot find ('\bin\chromedriver.exe', 'C:\bin\chromedriver.exe', 1, 'b')
+Traceback (most recent call last):
+  File "c:\program files (x86)\python36-32\lib\runpy.py", line 193, in _run_modu
+le_as_main
+    "__main__", mod_spec)
+  File "c:\program files (x86)\python36-32\lib\runpy.py", line 85, in _run_code
+    exec(code, run_globals)
+  File "C:\Program Files (x86)\Python36-32\Scripts\pyinstaller.exe\__main__.py",
+ line 9, in <module>
+  File "c:\program files (x86)\python36-32\lib\site-packages\PyInstaller\__main_
+_.py", line 111, in run
+    run_build(pyi_config, spec_file, **vars(args))
+  File "c:\program files (x86)\python36-32\lib\site-packages\PyInstaller\__main_
+_.py", line 63, in run_build
+    PyInstaller.building.build_main.main(pyi_config, spec_file, **kwargs)
+  File "c:\program files (x86)\python36-32\lib\site-packages\PyInstaller\buildin
+g\build_main.py", line 838, in main
+    build(specfile, kw.get('distpath'), kw.get('workpath'), kw.get('clean_build'
+))
+  File "c:\program files (x86)\python36-32\lib\site-packages\PyInstaller\buildin
+g\build_main.py", line 784, in build
+    exec(text, spec_namespace)
+  File "<string>", line 32, in <module>
+  File "c:\program files (x86)\python36-32\lib\site-packages\PyInstaller\buildin
+g\api.py", line 424, in __init__
+    strip_binaries=self.strip, upx_binaries=self.upx,
+  File "c:\program files (x86)\python36-32\lib\site-packages\PyInstaller\buildin
+g\api.py", line 196, in __init__
+    self.__postinit__()
+  File "c:\program files (x86)\python36-32\lib\site-packages\PyInstaller\buildin
+g\datastruct.py", line 158, in __postinit__
+    self.assemble()
+  File "c:\program files (x86)\python36-32\lib\site-packages\PyInstaller\buildin
+g\api.py", line 281, in assemble
+    pylib_name=pylib_name)
+  File "c:\program files (x86)\python36-32\lib\site-packages\PyInstaller\archive
+\writers.py", line 334, in __init__
+    super(CArchiveWriter, self).__init__(archive_path, logical_toc)
+  File "c:\program files (x86)\python36-32\lib\site-packages\PyInstaller\archive
+\writers.py", line 61, in __init__
+    self._add_from_table_of_contents(logical_toc)
+  File "c:\program files (x86)\python36-32\lib\site-packages\PyInstaller\archive
+\writers.py", line 86, in _add_from_table_of_contents
+    self.add(toc_entry)  # The guts of the archive.
+  File "c:\program files (x86)\python36-32\lib\site-packages\PyInstaller\archive
+\writers.py", line 381, in add
+    fh = open(pathnm, 'rb')
+PermissionError: [Errno 13] Permission denied: 'C:\\bin\\chromedriver.exe'
+
+C:\Users\cweaver\Documents\siptool>pyinstaller -F --icon=app.ico --add-binary="c
+hromedriver.exe;.\bin" Auto-Sip.py
+83 INFO: PyInstaller: 3.4
+83 INFO: Python: 3.6.4
+84 INFO: Platform: Windows-7-6.1.7601-SP1
+86 INFO: wrote C:\Users\cweaver\Documents\siptool\Auto-Sip.spec
+88 INFO: UPX is not available.
+89 INFO: Extending PYTHONPATH with paths
+['C:\\Users\\cweaver\\Documents\\siptool',
+ 'C:\\Users\\cweaver\\Documents\\siptool']
+90 INFO: checking Analysis
+142 INFO: Appending 'binaries' from .spec
+144 INFO: checking PYZ
+179 INFO: checking PKG
+180 INFO: Building because toc changed
+180 INFO: Building PKG (CArchive) PKG-00.pkg
+3562 INFO: Building PKG (CArchive) PKG-00.pkg completed successfully.
+3567 INFO: Bootloader c:\program files (x86)\python36-32\lib\site-packages\PyIns
+taller\bootloader\Windows-32bit\run.exe
+3568 INFO: checking EXE
+3570 INFO: Building because icon changed
+3571 INFO: Building EXE from EXE-00.toc
+3583 INFO: SRCPATH [('app.ico', None)]
+3583 INFO: Updating icons from ['app.ico'] to C:\Users\cweaver\AppData\Local\Tem
+p\tmpdaiqqsml
+Unable to open icon file app.ico
+
+C:\Users\cweaver\Documents\siptool>pyinstaller -F --add-binary="chromedriver.exe
+;.\bin" Auto-Sip.py
+74 INFO: PyInstaller: 3.4
+75 INFO: Python: 3.6.4
+75 INFO: Platform: Windows-7-6.1.7601-SP1
+77 INFO: wrote C:\Users\cweaver\Documents\siptool\Auto-Sip.spec
+81 INFO: UPX is not available.
+84 INFO: Extending PYTHONPATH with paths
+['C:\\Users\\cweaver\\Documents\\siptool',
+ 'C:\\Users\\cweaver\\Documents\\siptool']
+85 INFO: checking Analysis
+148 INFO: Appending 'binaries' from .spec
+150 INFO: checking PYZ
+186 INFO: checking PKG
+193 INFO: Bootloader c:\program files (x86)\python36-32\lib\site-packages\PyInst
+aller\bootloader\Windows-32bit\run.exe
+193 INFO: checking EXE
+196 INFO: Rebuilding EXE-00.toc because Auto-Sip.exe missing
+196 INFO: Building EXE from EXE-00.toc
+197 INFO: Appending archive to EXE C:\Users\cweaver\Documents\siptool\dist\Auto-
+Sip.exe
+217 INFO: Building EXE from EXE-00.toc completed successfully.
+
+C:\Users\cweaver\Documents\siptool>`$ doskey /history > makePY.txt
+'`$' is not recognized as an internal or external command,
+operable program or batch file.
+
+C:\Users\cweaver\Documents\siptool>doskey /history > makePY.txt
+
+C:\Users\cweaver\Documents\siptool>

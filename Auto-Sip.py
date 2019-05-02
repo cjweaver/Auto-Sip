@@ -28,9 +28,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-site="https://avsip.ad.bl.uk"
-# # # # # 
-# site="https://v12l-avsip.ad.bl.uk:8445"
+# site="https://avsip.ad.bl.uk"
+# # # # # # 
+site="https://v12l-avsip.ad.bl.uk:8445"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -487,8 +487,20 @@ def physical_structure(physical_structure_url, sip_id, item_format):
 
     time.sleep(5)
 
+def get_cd_log(shelfmark, log_directory):
+    shelfmark = shelfmark.replace('/', '-')
+    os.chdir(log_directory)
+    for f in os.listdir():
+        if f == shelfmark + ".txt":
+            print(f"found {shelfmark} shelfmark log")
+            with open(os.path.realpath(f), encoding='utf-16') as log_text:
+                return log_text.read()
 
-def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_metadata_date, noise_reduction):
+
+def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_metadata_date, noise_reduction, cdlog_text):
+    
+    print(cdlog_text)
+
     # get information for the src
     src_url = "{0}/api/SIP/{1}".format(site, src_sip_id)
     #DEBUG print("getting information for sip", src_sip_id)
@@ -554,6 +566,13 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
                                 _['parameters']['Cassette recorder']['noiseReduction']['value'] = noise_reduction
                                 break
 
+    if cdlog_text != None:
+        for node in d['processMetadata'][0]['children']:
+            if node['processType'] == "Capture":
+                    for _ in node['devices']:
+                            if _['deviceClass'] == "Software" and 'dBpoweramp' in _['model']: 
+                                _['logOutput'] = cdlog_text
+                                break
 
     dest_process_metadata = json.dumps(d)
     
@@ -625,7 +644,7 @@ def getSIPStobuild():
     next(rows)
     
     for row in rows:
-        shelfmark, filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes = row
+        shelfmark, filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory= row
         if shelfmark.value == None:
             # Stop reading the spreadsheet once you hit a blank shelfmark cell
             break
@@ -638,8 +657,8 @@ def getSIPStobuild():
             #filemask = shelfmark.value[-4:] + "X"
             # Need removed zero padding from shelfmark
             filemask = (shelfmark.value).replace("/", "-")
-            filemask = [filemask.replace(" ", "-")]
-            filemask += "_"
+            filemask = [filemask.replace(" ", "-") + '_']
+            # filemask += "_"
         else:
             filestr = str(filename.value)
             filemask = [x.replace("/", "-") for x in list(map(str.strip, filestr.split(";")))]
@@ -661,7 +680,7 @@ def getSIPStobuild():
                 pm_date = "NO"
             
                     
-        l = [shelfmark.value, directory, filemask, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value]
+        l = [shelfmark.value, directory, filemask, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value, log_directory.value]
         SIPS.append(l)
     return SIPS
 
@@ -676,7 +695,12 @@ def main():
         input("Press q to quit: ")
         quit()
         
+    print("""\n
     
+    Auto-SIP v0.1 - April 2019
+    
+    Very much a work in progress!
+    For support christopher.weaver@bl.uk""")
     
     user, password = ADloginDetails()
 
@@ -710,7 +734,7 @@ def main():
     global retry_count
     for sip in SIPS:
         retry_count = 0
-        shelfmark, directory, filemasks, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes = sip
+        shelfmark, directory, filemasks, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory = sip
         print("\n\n\n\n\n")
         print("\n********************************************************************************")
         print("Creating SIP")
@@ -726,7 +750,9 @@ def main():
 
             physical_structure_url = analysis(sip_id)
             physical_structure(physical_structure_url, sip_id, item_format) #pass the physical structure??
-            copy_processmetadata(reference_sip, sip_id, speed, eq, notes, process_metadata_date, noise_reduction)
+            cdlog_text = get_cd_log(shelfmark, log_directory)
+            print(cdlog_text)
+            copy_processmetadata(reference_sip, sip_id, speed, eq, notes, process_metadata_date, noise_reduction, cdlog_text)
         except Exception as e:
             failed_sips.append((shelfmark + ":  " + str(e)))
             continue

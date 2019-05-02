@@ -639,9 +639,10 @@ def getSIPStobuild():
             # Need removed zero padding from shelfmark
             filemask = (shelfmark.value).replace("/", "-")
             filemask = [filemask.replace(" ", "-")]
+            filemask += "_"
         else:
             filestr = str(filename.value)
-            filemask = [x.replace("/", "-") for x in list(map(str.strip, filename.value.split(";")))]
+            filemask = [x.replace("/", "-") for x in list(map(str.strip, filestr.split(";")))]
             # Strip any blank str from the filemask list. filter does bool(item) on filemask and only passes True items.
             # filter(None, item) - If None, the function defaults to Identity function - which returns false if any elements are false
             filemask = list(filter(None, filemask))

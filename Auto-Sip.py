@@ -30,7 +30,7 @@ urllib3.disable_warnings()
 
 # site="https://avsip.ad.bl.uk"
 # # # # # # 
-site="https://v12l-avsip.ad.bl.uk:8445"
+site="https://v12l-avsip.ad.bl.uk:8446"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -381,7 +381,9 @@ def analysis(sip_id):
             warnings.simplefilter("ignore")
             r = requests.get(f"{site}/api/SIP/" + sip_id, verify=False)
         j = r.json()
-        if j["HasCompletedAllTransformations"]:
+
+        # handle change of JSON key in new SIP v4
+        if j.get("HasCompletedAllTransformationsSuccessfully", "HasCompletedAllTransformations"):
             print("\n Analysis Page has finished. We can continue")
             break
 
@@ -542,37 +544,37 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
         for node in d['processMetadata'][0]['children']:
             if node['processType'] == "Migration":
                     for _ in node['devices']:
-                            if _['deviceType'] == "Tape recorder":
-                                _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
-                                break
+                        if _['deviceType'] == "Tape recorder":
+                            _['parameters']['Tape recorder']['replaySpeed']['value'] = speed
+                            break
                                 
     if eq != None:
         for node in d['processMetadata'][0]['children']:
             if node['processType'] == "Migration":
                     for _ in node['devices']:
-                            if _['deviceType'] == "Tape recorder":
-                                _['parameters']['Tape recorder']['equalisation']['value'] = eq
-                            elif _['deviceType'] == "Cassette recorder":
-                                _['parameters']['Cassette recorder']['equalisation']['value'] = eq
-                                break
+                        if _['deviceType'] == "Tape recorder":
+                            _['parameters']['Tape recorder']['equalisation']['value'] = eq
+                        elif _['deviceType'] == "Cassette recorder":
+                            _['parameters']['Cassette recorder']['equalisation']['value'] = eq
+                            break
 
 
                               
     if noise_reduction != None:
         for node in d['processMetadata'][0]['children']:
             if node['processType'] == "Migration":
-                    for _ in node['devices']:
-                            if _['deviceType'] == "Cassette recorder":
-                                _['parameters']['Cassette recorder']['noiseReduction']['value'] = noise_reduction
-                                break
+                for _ in node['devices']:
+                        if _['deviceType'] == "Cassette recorder":
+                            _['parameters']['Cassette recorder']['noiseReduction']['value'] = noise_reduction
+                            break
 
     if cdlog_text != None:
         for node in d['processMetadata'][0]['children']:
             if node['processType'] == "Capture":
-                    for _ in node['devices']:
-                            if _['deviceClass'] == "Software" and 'dBpoweramp' in _['model']: 
-                                _['logOutput'] = cdlog_text
-                                break
+                for _ in node['devices']:
+                        if _['deviceClass'] == "Software" and 'dBpoweramp' in _['model']: 
+                            _['logOutput'] = cdlog_text
+                            break
 
     dest_process_metadata = json.dumps(d)
     

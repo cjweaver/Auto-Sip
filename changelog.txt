@@ -1,2 +1,2 @@
-v1 - Intial release
+v0.1 - Intial release
 v1.1 - Proper error when missing SIPS.xlsx (Kevin), Password is obsucred by *** (Yadley), Remove any whitespace or blank files in filename column in spreadsheet.

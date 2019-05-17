@@ -325,7 +325,7 @@ def analysis(sip_id):
 
     def retry_analysis(failure, page, sip_id):
         global retry_count
-        if retry_count > 2:
+        if retry_count > 20:
             raise TooManyRetries(f"A file keeps failing the {failure} process")
         retry_count += 1
         driver.get(page)
@@ -722,6 +722,12 @@ def main():
     else:
         # driver = webdriver.Chrome()
         driver = webdriver.Chrome(chrome_options=options)
+#         Need to catch when the chromedriver doesn't match the current Chrome installed
+#         Exception has occurred: SessionNotCreatedException
+#        Message: session not created: Chrome version must be between 70 and 73
+#          (Driver info: chromedriver=73.0.3683.68 (47787ec04b6e38e22703e856e101e840b65afe72),platform=Windows NT 6.1.7601 SP1 x86_64)
+
+
     # driver.maximize_window()
     
     #driver.implicitly_wait(10)

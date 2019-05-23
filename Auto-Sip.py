@@ -28,9 +28,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-# site="https://avsip.ad.bl.uk"
+site="https://avsip.ad.bl.uk"
 # # # # # # 
-site="https://v12l-avsip.ad.bl.uk:8446"
+# site="https://v12l-avsip.ad.bl.uk:8446"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -123,6 +123,7 @@ def createNewsip(shelfmark, grouping="None"):
     driver.get(f"{site}/Steps/Search")
     handle_logout("SAMI Search", "/Steps/Search/")
     
+    # def search_sami(shelfmark):
     sip = driver.wait.until(EC.visibility_of_element_located((By.ID, "searchBox")))
     sip.click()
     sip.send_keys(shelfmark)
@@ -130,10 +131,15 @@ def createNewsip(shelfmark, grouping="None"):
     driver.find_element_by_xpath("//*[@id='main-content']/div[1]/div[1]/button").click()
     
     # Test to see if the search returns zero results
-    results = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//*[@id="main-content"]/div[2]/div[1]/h4[2]/span'))).text
-    if "Please try again" in results:
-        # Raise exception 
-        pass 
+    # results = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//*[@id="main-content"]/div[2]/div[1]/h4[2]/span'))).text
+    # if driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//span[text()="Found 0 results... Please try again."]'))):
+    #     print("Found no results text\nRetrying with zero-padded shelfmark")
+    #     search_sami(shelfmark)
+    
+    
+    # if "Please try again" in results:
+    #     # Raise exception 
+    #     pass 
     
     # Wait until the 1st result is found before continuing
     driver.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "list-group-item")))
@@ -383,7 +389,11 @@ def analysis(sip_id):
         j = r.json()
 
         # handle change of JSON key in new SIP v4
-        if j.get("HasCompletedAllTransformationsSuccessfully", "HasCompletedAllTransformations"):
+        if "HasCompletedAllTransformationsSuccessfully" in j:
+            if j.get("HasCompletedAllTransformationsSuccessfully"):
+                print("\n Analysis Page has finished. We can continue")
+                break
+        elif j.get("HasCompletedAllTransformations"):
             print("\n Analysis Page has finished. We can continue")
             break
 
@@ -501,7 +511,7 @@ def get_cd_log(shelfmark, log_directory):
 
 def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_metadata_date, noise_reduction, cdlog_text):
     
-    print(cdlog_text)
+    # print(cdlog_text)
 
     # get information for the src
     src_url = "{0}/api/SIP/{1}".format(site, src_sip_id)
@@ -758,8 +768,12 @@ def main():
 
             physical_structure_url = analysis(sip_id)
             physical_structure(physical_structure_url, sip_id, item_format) #pass the physical structure??
-            cdlog_text = get_cd_log(shelfmark, log_directory)
-            print(cdlog_text)
+            
+            if log_directory != None:
+                cdlog_text = get_cd_log(shelfmark, log_directory)
+            else:
+                cdlog_text = None
+            
             copy_processmetadata(reference_sip, sip_id, speed, eq, notes, process_metadata_date, noise_reduction, cdlog_text)
         except Exception as e:
             failed_sips.append((shelfmark + ":  " + str(e)))

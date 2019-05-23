@@ -4,6 +4,7 @@ import openpyxl
 import os
 import json
 import sys
+import re
 # from tkinter import *
 # from tkinter import filedialog
 import warnings
@@ -28,9 +29,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-site="https://avsip.ad.bl.uk"
+# site="https://avsip.ad.bl.uk"
 # # # # # # 
-# site="https://v12l-avsip.ad.bl.uk:8446"
+site="https://v12l-avsip.ad.bl.uk:8447"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -168,7 +169,19 @@ def createNewsip(shelfmark, grouping="None"):
 
     # Create pSIP button
     driver.wait.until(EC.element_to_be_clickable((By.ID, "nav-create-button"))).click()
-    driver.wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[3]/div[2]/nav/button[3]"))).click()
+    time.sleep(2)
+        
+    # Check for any modal popup that says the SAMi record has already been associted with a sip
+    if driver.find_element_by_xpath("//button[text()='Continue ']").get_attribute('disabled') == 'true':
+        modal = driver.wait.until(EC.presence_of_element_located((By.XPATH, "//*[@class='modal-open']")))
+        if "has already been associated" in modal.get_attribute('textContent'):
+            creator = re.findall(r'by\s[a-zA-Z]+', modal.get_attribute('textContent'))[0]
+            raise Exception(f"The SIP has already been created {creator}.")
+
+
+    sip_continue = driver.wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[3]/div[2]/nav/button[3]")))
+    sip_continue.click()
+    
     # Return the sip_id
     url = driver.current_url
     return url.split('/')[-2]
@@ -399,7 +412,7 @@ def analysis(sip_id):
 
         # Search the JSON for failed Analysis/Copy or transforms and retry
         elif j["NavigationState"]["NavigationSteps"][2]["Complete"] == False:
-            for i, item in enumerate(j["Files"]):
+            for i, _ in enumerate(j["Files"]):
                 if j["Files"][i]["HasAnalysisFailed"]:
                     logger.debug(f'{j["Files"][i]["Name"]} has failed analysis')
                     retry_analysis("Analysis", analysis_url, sip_id)
@@ -647,7 +660,14 @@ def getSIPStobuild():
     print(f"\nReading the SIPS.xlsx spreadsheet from {desktop}")
     os.chdir(desktop)
 
+    # Supress warning about "UserWarning: Data Validation extension is not supported and will be removed"
+    # The SIPS spreadsheet forces data validation
+    # https://stackoverflow.com/questions/30169149/what-causes-userwarning-discarded-range-with-reserved-name-openpyxl
+
+    warnings.simplefilter("ignore")
     wb = openpyxl.load_workbook('SIPS.xlsx')
+    warnings.simplefilter("default")
+    
     ws = wb.active
     rows = ws.rows
     #print(rows)
@@ -700,6 +720,16 @@ def main():
     # root = Tk()
     # root.filename = filedialog.askopenfilename(initialdir="c:\\", title="Select SIP list")
     # print(root.filename)
+    
+    print("""\n
+    
+    Auto-SIP v0.1 - April 2019
+    
+    Very much a work in progress!
+    For support christopher.weaver@bl.uk\n\n""")
+    
+    
+    
     try:
         SIPS = getSIPStobuild()
     except FileNotFoundError as e:
@@ -707,12 +737,7 @@ def main():
         input("Press q to quit: ")
         quit()
         
-    print("""\n
     
-    Auto-SIP v0.1 - April 2019
-    
-    Very much a work in progress!
-    For support christopher.weaver@bl.uk""")
     
     user, password = ADloginDetails()
 

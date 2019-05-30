@@ -31,7 +31,7 @@ urllib3.disable_warnings()
 
 # site="https://avsip.ad.bl.uk"
 # # # # # # 
-site="https://v12l-avsip.ad.bl.uk:8447"
+site="https://v12l-avsip.ad.bl.uk:8445"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -530,6 +530,8 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     src_url = "{0}/api/SIP/{1}".format(site, src_sip_id)
     #DEBUG print("getting information for sip", src_sip_id)
     src_req = requests.get(src_url, verify=False)
+    if src_req.reason == 'Not Found':
+        raise Exception(f'Process Metadata copy failed. Cannot find a SIP with ID number {src_sip_id}')
     src_req.encoding = src_req.apparent_encoding
     src_json = src_req.json()
     
@@ -627,8 +629,6 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
         json=dest_process_metadata,
         verify=False
     )
-    #print(r)
-    
     # Once the Process Metadata has been copied from the JSON
     # visit the page and step complete & continue
     # this checks the process metadata
@@ -636,7 +636,14 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     driver.get(f"{site}/Steps/Process/{dest_sip_id}/{dest_step_id}")
     handle_logout("Process Metadata", "/Steps/Process/", dest_sip_id)
     
-   # Page is ready when this dropdown for custom SIP metadata is available
+    # Click 'OK' if there is a warning about Process Metadata vocabulary
+    time.sleep(2)
+    if driver.find_element_by_xpath("//*[@class='modal-open']"):
+        driver.find_element_by_xpath("//button[text()='OK']").click()
+        time.sleep(2)
+    
+
+    # Page is ready when this dropdown for custom SIP metadata is available
     driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='process-metadata-form']/div[3]/button")))
     driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))).click()
     driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='page-content-wrapper']/div[2]/div[2]/nav/button[3]"))).click()

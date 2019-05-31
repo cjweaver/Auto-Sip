@@ -113,6 +113,7 @@ def SIP_tool_login(site, user, password, do_get=True):
     username_elem.send_keys(user)
     password_elem.send_keys(password)
     password_elem.submit()
+    # if account not found in the title, close the 
 
 def saveContinue():
     
@@ -136,9 +137,9 @@ def createNewsip(shelfmark, grouping="None"):
     
     
     # Test to see if the search returns zero results
-    results = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//*[@id="main-content"]/div[2]/div[1]/h4[2]/span'))).text
-    if "Found 0 results... Please try again" in results.text:
-        raise Exception(f"Found no SAMI results with {shelfmark}. Try with zero padded shelfmark?") 
+    driver.wait.until(EC.text_to_be_present_in_element((By.XPATH, '//*[@id="main-content"]/div[2]/div[1]/h4[2]/span'), "Found"))
+    if "Found 0 results... Please try again" in driver.find_element_by_xpath('//*[@id="main-content"]/div[2]/div[1]/h4[2]/span').text:
+        raise Exception(f"Found no SAMI results with {shelfmark}. Try with zero padded shelfmark???") 
        
     
     
@@ -734,7 +735,7 @@ def main():
     
     print("""\n
     
-    Auto-SIP v0.1 - April 2019
+    Auto-SIP v0.1.1 - May 2019
     
     Very much a work in progress!
     For support christopher.weaver@bl.uk\n\n""")

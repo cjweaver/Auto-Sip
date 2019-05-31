@@ -31,7 +31,7 @@ urllib3.disable_warnings()
 
 # site="https://avsip.ad.bl.uk"
 # # # # # # 
-site="https://v12l-avsip.ad.bl.uk:8445"
+site="https://v12l-avsip.ad.bl.uk:8446"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -115,32 +115,34 @@ def SIP_tool_login(site, user, password, do_get=True):
     password_elem.submit()
 
 def saveContinue():
-    driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "nav-save-button"))).click()
-    driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))).click()
-    driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='page-content-wrapper']/div[2]/div[2]/nav/button[3]"))).click()
+    
+    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "nav-save-button"))))
+    #driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "nav-save-button"))).click()
+    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))))
+    #driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))).click()
+    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='page-content-wrapper']/div[2]/div[2]/nav/button[3]"))))
 
 def createNewsip(shelfmark, grouping="None"):
     # Search SAMI for shelfmark
     driver.get(f"{site}/Steps/Search")
     handle_logout("SAMI Search", "/Steps/Search/")
     
-    # def search_sami(shelfmark):
+    
     sip = driver.wait.until(EC.visibility_of_element_located((By.ID, "searchBox")))
-    sip.click()
+    driver.execute_script("arguments[0].click();", sip)
     sip.send_keys(shelfmark)
     # Click "Search" button
-    driver.find_element_by_xpath("//*[@id='main-content']/div[1]/div[1]/button").click()
+    driver.execute_script("arguments[0].click();", driver.find_element_by_xpath("//*[@id='main-content']/div[1]/div[1]/button"))
+    
     
     # Test to see if the search returns zero results
-    # results = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//*[@id="main-content"]/div[2]/div[1]/h4[2]/span'))).text
-    # if driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//span[text()="Found 0 results... Please try again."]'))):
-    #     print("Found no results text\nRetrying with zero-padded shelfmark")
-    #     search_sami(shelfmark)
+    results = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//*[@id="main-content"]/div[2]/div[1]/h4[2]/span'))).text
+    if "Found 0 results... Please try again" in results.text:
+        raise Exception(f"Found no SAMI results with {shelfmark}. Try with zero padded shelfmark?") 
+       
     
     
-    # if "Please try again" in results:
-    #     # Raise exception 
-    #     pass 
+    
     
     # Wait until the 1st result is found before continuing
     driver.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "list-group-item")))
@@ -155,20 +157,21 @@ def createNewsip(shelfmark, grouping="None"):
         for i, item in enumerate(SAMI_items):
             sami_item_text = item.text
             if sami_item_text.startswith(shelfmark):
-                SAMI_items[i].click()
+                driver.execute_script("arguments[0].click();", SAMI_items[i])
                 break
             elif sami_item_text.startswith(grouping):
-                SAMI_items[i].click()
+                driver.execute_script("arguments[0].click();", SAMI_items[i])
     else:
         sami_item_text = SAMI_items[0].text
-        SAMI_items[0].click()
+        driver.execute_script("arguments[0].click();", SAMI_items[0])
+    
     print("\n********************************************************************************")
     print("\nSAMI Search")
     logger.info(sami_item_text)
     
 
     # Create pSIP button
-    driver.wait.until(EC.element_to_be_clickable((By.ID, "nav-create-button"))).click()
+    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.ID, "nav-create-button"))))
     time.sleep(2)
         
     # Check for any modal popup that says the SAMi record has already been associted with a sip
@@ -180,7 +183,7 @@ def createNewsip(shelfmark, grouping="None"):
 
 
     sip_continue = driver.wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[3]/div[2]/nav/button[3]")))
-    sip_continue.click()
+    driver.execute_script("arguments[0].click();", sip_continue)
     
     # Return the sip_id
     url = driver.current_url
@@ -230,9 +233,9 @@ def source_files(directory, file_patterns, sip_id, pm_date):
     # click the "Current directory Box" dues to how KnockoutJS handles focus and clicks
     directory_box = driver.find_element_by_id("currentDirectoryBox")
     # focus on the box
-    directory_box.click()
+    driver.execute_script("arguments[0].click();", directory_box)
     # actually click the box
-    directory_box.click()
+    driver.execute_script("arguments[0].click();", directory_box)
     time.sleep(2)
     # directory_box.send_keys(Keys.CONTROL + "a");
     # directory_box.send_keys(Keys.DELETE);
@@ -246,7 +249,7 @@ def source_files(directory, file_patterns, sip_id, pm_date):
         #else
         # Add some code to handle if the directory box doesn't clear and is a garbled 
     file_pattern_box = driver.find_element_by_xpath("//*[@id='filePatternBox']")
-    file_pattern_box.click()
+    driver.execute_script("arguments[0].click();", file_pattern_box)
     # file_pattern will be differnt depending on old or new file name schema
 
     
@@ -256,14 +259,15 @@ def source_files(directory, file_patterns, sip_id, pm_date):
         file_pattern_box.clear()
         file_pattern_box.send_keys(file_pattern)
         file_pattern_box.send_keys(Keys.TAB)
-        driver.find_element_by_xpath("//*[@id='main-content']/div[3]/div/button").click()
+        driver.execute_script("arguments[0].click();", driver.find_element_by_xpath("//*[@id='main-content']/div[3]/div/button"))
         if len(file_patterns) != 1:
             time.sleep(2)
         driver.wait.until(EC.presence_of_element_located((By.ID, "accordion")))
     
         # Throw an AssertionError if no files are found
-        any_files = driver.find_element_by_xpath('//*[contains(text(), "dirs")]')
-        assert (not "0 files" in any_files.text), f"Sorry no files found with filename {file_pattern} at {path}"
+        any_files = driver.find_element_by_xpath('//*[contains(text(), " dir,")]')
+        if " 0 files" in any_files.text:
+            raise Exception(f"Sorry no files found with filename {file_pattern} at {path}")
 
         # The files are displayed in a <ul>
         # There are two elements with class "list-group sami-container"
@@ -286,7 +290,7 @@ def source_files(directory, file_patterns, sip_id, pm_date):
                     #print(filename)
                     file_names.append(filename)
             time.sleep(.200)
-            item.click()
+            driver.execute_script("arguments[0].click();", item)
     logger.info(f"Found {len(file_names)} file(s)")
   
     #logger.info("Here is the list of files: %s", *file_names) doesn't work with *var
@@ -330,7 +334,7 @@ def analysis(sip_id):
     handle_logout("File Analysis", "/Steps/Analyze/", sip_id)
      
     # Copy All Files (Overwrite)
-    driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='copy-files-buttons']/div/div/div/button[1]"))).click()
+    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='copy-files-buttons']/div/div/div/button[1]"))))
     analysis_url = driver.current_url
     print("\n********************************************************************************")
     print("\nFile Analysis, Validation, and Transformation")
@@ -777,6 +781,8 @@ def main():
 
 
     SIP_tool_login(site, user, password)
+    # Need to warn user if incorrect username and password is entered
+    # LoginAD?ReturnUrl=%2FAccount%2FUserNotFound
     
     failed_sips = []
     print()

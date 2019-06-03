@@ -29,9 +29,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-# site="https://avsip.ad.bl.uk"
+site="https://avsip.ad.bl.uk"
 # # # # # # 
-site="https://v12l-avsip.ad.bl.uk:8446"
+# site="https://v12l-avsip.ad.bl.uk:8446"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -264,11 +264,11 @@ def source_files(directory, file_patterns, sip_id, pm_date):
         if len(file_patterns) != 1:
             time.sleep(2)
         driver.wait.until(EC.presence_of_element_located((By.ID, "accordion")))
-    
+
         # Throw an AssertionError if no files are found
-        any_files = driver.find_element_by_xpath('//*[contains(text(), " dir,")]')
+        any_files = driver.find_element_by_xpath('//span[contains(text(), "Found")]')
         if " 0 files" in any_files.text:
-            raise Exception(f"Sorry no files found with filename {file_pattern} at {path}")
+            raise AssertionError(f"Sorry no files found with filename {file_pattern} at {path}")
 
         # The files are displayed in a <ul>
         # There are two elements with class "list-group sami-container"
@@ -794,12 +794,13 @@ def main():
         shelfmark, directory, filemasks, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory = sip
         print("\n\n\n\n\n")
         print("\n********************************************************************************")
-        print("Creating SIP")
         logger.info(f"Procesing current shelfmark {shelfmark}")
 
         try:
             sip_id = createNewsip(shelfmark)
+            print("Creating SIP")
             logger.info(f"SIP ID for shelfmark {shelfmark} is {sip_id}")
+            
 
             process_metadata_date = source_files(directory, filemasks, sip_id, pm_date)
             

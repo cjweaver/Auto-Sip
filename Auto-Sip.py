@@ -29,9 +29,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-site="https://avsip.ad.bl.uk"
+# site="https://avsip.ad.bl.uk"
 # # # # # # 
-# site="https://v12l-avsip.ad.bl.uk:8446"
+site="https://v12l-avsip.ad.bl.uk:8446"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -173,15 +173,17 @@ def createNewsip(shelfmark, grouping="None"):
 
     # Create pSIP button
     driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.ID, "nav-create-button"))))
-    time.sleep(2)
-        
+    # time.sleep(2)
+
+    driver.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "form-group has-feedback has-success")))
+     
     # Check for any modal popup that says the SAMi record has already been associted with a sip
     if driver.find_element_by_xpath("//button[text()='Continue ']").get_attribute('disabled') == 'true':
         modal = driver.wait.until(EC.presence_of_element_located((By.XPATH, "//*[@class='modal-open']")))
         if "has already been associated" in modal.get_attribute('textContent'):
             creator = re.findall(r'by\s[a-zA-Z]+', modal.get_attribute('textContent'))[0]
             raise Exception(f"The SIP has already been created {creator}.")
-
+   
 
     sip_continue = driver.wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[3]/div[2]/nav/button[3]")))
     driver.execute_script("arguments[0].click();", sip_continue)
@@ -518,13 +520,19 @@ def physical_structure(physical_structure_url, sip_id, item_format):
     time.sleep(5)
 
 def get_cd_log(shelfmark, log_directory):
-    shelfmark = shelfmark.replace('/', '-')
-    os.chdir(log_directory)
-    for f in os.listdir():
-        if f == shelfmark + ".txt":
-            print(f"found {shelfmark} shelfmark log")
-            with open(os.path.realpath(f), encoding='utf-16') as log_text:
-                return log_text.read()
+    if log_directory == None:
+        return None
+    else:
+        shelfmark = shelfmark.replace('/', '-')
+        try:
+            os.chdir(log_directory)
+            for f in os.listdir():
+                if f == shelfmark + ".txt":
+                    print(f"found {shelfmark} shelfmark log")
+                    with open(os.path.realpath(f), encoding='utf-16') as log_text:
+                        return log_text.read()
+        except WindowsError as error:
+            logger.info(f"Cannot locate CD log {error}")
 
 
 def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_metadata_date, noise_reduction, cdlog_text):
@@ -643,15 +651,19 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     
     # Click 'OK' if there is a warning about Process Metadata vocabulary
     time.sleep(2)
-    if driver.find_element_by_xpath("//*[@class='modal-open']"):
+    try:
+        driver.find_element_by_xpath("//*[@class='modal-open']")
         driver.find_element_by_xpath("//button[text()='OK']").click()
         time.sleep(2)
-    
+    except NoSuchElementException:
+        pass
+        
 
     # Page is ready when this dropdown for custom SIP metadata is available
     driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='process-metadata-form']/div[3]/button")))
     driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))).click()
     driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='page-content-wrapper']/div[2]/div[2]/nav/button[3]"))).click()
+   
 
 
 
@@ -778,7 +790,7 @@ def main():
     # driver.maximize_window()
     
     #driver.implicitly_wait(10)
-    driver.wait = WebDriverWait(driver, 120)
+    driver.wait = WebDriverWait(driver, 10)
 
 
     SIP_tool_login(site, user, password)
@@ -809,10 +821,8 @@ def main():
             physical_structure_url = analysis(sip_id)
             physical_structure(physical_structure_url, sip_id, item_format) #pass the physical structure??
             
-            if log_directory != None:
-                cdlog_text = get_cd_log(shelfmark, log_directory)
-            else:
-                cdlog_text = None
+            
+            cdlog_text = get_cd_log(shelfmark, log_directory)
             
             copy_processmetadata(reference_sip, sip_id, speed, eq, notes, process_metadata_date, noise_reduction, cdlog_text)
         except Exception as e:

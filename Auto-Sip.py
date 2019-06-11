@@ -29,9 +29,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-# site="https://avsip.ad.bl.uk"
+site="https://avsip.ad.bl.uk"
 # # # # # # 
-site="https://v12l-avsip.ad.bl.uk:8446"
+# site="https://v12l-avsip.ad.bl.uk:8446"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -174,16 +174,16 @@ def createNewsip(shelfmark, grouping="None"):
     # Create pSIP button
     driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.ID, "nav-create-button"))))
     # time.sleep(2)
-
-    driver.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "form-group has-feedback has-success")))
-     
-    # Check for any modal popup that says the SAMi record has already been associted with a sip
-    if driver.find_element_by_xpath("//button[text()='Continue ']").get_attribute('disabled') == 'true':
-        modal = driver.wait.until(EC.presence_of_element_located((By.XPATH, "//*[@class='modal-open']")))
-        if "has already been associated" in modal.get_attribute('textContent'):
-            creator = re.findall(r'by\s[a-zA-Z]+', modal.get_attribute('textContent'))[0]
-            raise Exception(f"The SIP has already been created {creator}.")
-   
+    try:
+        driver.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "form-group has-feedback has-success")))
+    except TimeoutException:
+        # Check for any modal popup that says the SAMi record has already been associted with a sip
+        if driver.find_element_by_xpath("//button[text()='Continue ']").get_attribute('disabled') == 'true':
+            modal = driver.wait.until(EC.presence_of_element_located((By.XPATH, "//*[@class='modal-open']")))
+            if "has already been associated" in modal.get_attribute('textContent'):
+                creator = re.findall(r'by\s[a-zA-Z\.]+', modal.get_attribute('textContent'))[0]
+                raise Exception(f"The SIP has already been created {creator}.")
+    
 
     sip_continue = driver.wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[3]/div[2]/nav/button[3]")))
     driver.execute_script("arguments[0].click();", sip_continue)
@@ -306,7 +306,6 @@ def source_files(directory, file_patterns, sip_id, pm_date):
         # Use the date specified in the reference SIP
         process_metadata_date = "N/A"
         print("\nUsing the dates specified in the reference SIP process metadata page")
-
     elif pm_date == "YES":
         # use file creation date
         process_metadata_date = date_tally(file_text)
@@ -360,23 +359,23 @@ def analysis(sip_id):
             # NEED to check if the DIV is collapesed or not otherwise script hangs.
             elem = driver.find_element_by_xpath("//a[@href='#analysis-failed-collapse']")
             if elem.get_attribute("aria-expanded") is None:
-                driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='#analysis-failed-collapse']"))).click()
-                driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='analysis-failed-collapse']/div[2]/div/div/div[1]/div/div/button[1]"))).click()
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='#analysis-failed-collapse']"))))
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='analysis-failed-collapse']/div[2]/div/div/div[1]/div/div/button[1]"))))
             elif elem.get_attribute("aria-expanded") == 'false':
-                driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='#analysis-failed-collapse']"))).click()
-                driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='analysis-failed-collapse']/div[2]/div/div/div[1]/div/div/button[1]"))).click()
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='#analysis-failed-collapse']"))))
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='analysis-failed-collapse']/div[2]/div/div/div[1]/div/div/button[1]"))))
             else:
-                driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='analysis-failed-collapse']/div[2]/div/div/div[1]/div/div/button[1]"))).click()
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='analysis-failed-collapse']/div[2]/div/div/div[1]/div/div/button[1]"))))
             print("Retrying File Analysis.")
         elif failure == "Transform":
             # Unlike "Copy" or "Analysis click a single button doesn't restart the process for all files.
             # Therefore need to iterate over every button in the DIV
             elem = driver.find_element_by_xpath("//a[@href='#failed-transformation-files-collapse']")
             if elem.get_attribute("aria-expanded") is None:
-                driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='#failed-transformation-files-collapse']"))).click()
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='#failed-transformation-files-collapse']"))))
             else: 
                 # elem.get_attribute("aria-expanded") == 'false'
-                driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='#failed-transformation-files-collapse']"))).click()
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='#failed-transformation-files-collapse']"))))
             # elem = driver.find_element_by_xpath('//*[@id="failed-transformation-files-collapse"]/div')
             failed_files = elem.find_elements_by_xpath("//*[@id='failed-transformation-files-collapse']/div")
             # //*[@id="failed-transformation-files-collapse"]/div/div[1]/button
@@ -391,13 +390,13 @@ def analysis(sip_id):
             # failure == "Copy":
             elem = driver.find_element_by_xpath("//a[@href='#copy-failed-collapse']")
             if elem.get_attribute("aria-expanded") is None:
-                driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='#copy-failed-collapse']"))).click()
-                driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='copy-failed-collapse']/div[2]/div/div/div[1]/div/div/button[1]"))).click()
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='#copy-failed-collapse']"))))
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='copy-failed-collapse']/div[2]/div/div/div[1]/div/div/button[1]"))))
             elif elem.get_attribute("aria-expanded") == 'false':
-                driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='#copy-failed-collapse']"))).click()
-                driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='copy-failed-collapse']/div[2]/div/div/div[1]/div/div/button[1]"))).click()
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='#copy-failed-collapse']"))))
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='copy-failed-collapse']/div[2]/div/div/div[1]/div/div/button[1]"))))
             else:
-                driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='copy-failed-collapse']/div[2]/div/div/div[1]/div/div/button[1]"))).click()
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='copy-failed-collapse']/div[2]/div/div/div[1]/div/div/button[1]"))))
             print("Retrying copying file(s) to the server.")
         time.sleep(5)
         driver.get(site)
@@ -499,7 +498,7 @@ def physical_structure(physical_structure_url, sip_id, item_format):
 
     for i in range((len(file_names)) - 1):
     # Clicking the dropdown above automatically adds a file select, hence len(file_names) - 1
-        driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='demo2']/div/div[1]/div[3]/button[2]"))).click()
+        driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='demo2']/div/div[1]/div[3]/button[2]"))))
         # driver.wait.until(EC.presence_of_element_located((By.ID, "structure-heading")))
     select_div = driver.find_element_by_xpath('//*[@id="demo2"]/div/div[2]/ul')
     selects = select_div.find_elements_by_tag_name("select")
@@ -511,12 +510,10 @@ def physical_structure(physical_structure_url, sip_id, item_format):
         i += 1
     
     # Save and mark as step complete but don't click continue to avoid next page modal
-    driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "nav-save-button"))).click()
-    driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))).click()
+    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "nav-save-button"))))
+    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))))
 
     print("Complete.")
-    
-
     time.sleep(5)
 
 def get_cd_log(shelfmark, log_directory):
@@ -653,7 +650,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     time.sleep(2)
     try:
         driver.find_element_by_xpath("//*[@class='modal-open']")
-        driver.find_element_by_xpath("//button[text()='OK']").click()
+        driver.execute_script("arguments[0].click();", driver.find_element_by_xpath("//button[text()='OK']"))
         time.sleep(2)
     except NoSuchElementException:
         pass
@@ -661,8 +658,8 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
 
     # Page is ready when this dropdown for custom SIP metadata is available
     driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='process-metadata-form']/div[3]/button")))
-    driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))).click()
-    driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='page-content-wrapper']/div[2]/div[2]/nav/button[3]"))).click()
+    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))))
+    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='page-content-wrapper']/div[2]/div[2]/nav/button[3]"))))
    
 
 
@@ -673,7 +670,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     logger.info(f"Process Metadata complete for {site}/Steps/Process/{dest_sip_id}/{dest_step_id}")
     
     # Wait for the search box on the Search SAMI Recordings page
-    # before starting next function otherwise you get an error modal dialog
+    # before starting next SIP otherwise you get an error 9the site isn't quite ready!)
     driver.wait.until(EC.visibility_of_element_located((By.ID, "searchBox")))
     time.sleep(1)
     

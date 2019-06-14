@@ -29,9 +29,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-site="https://avsip.ad.bl.uk"
+# site="https://avsip.ad.bl.uk"
 # # # # # # 
-# site="https://v12l-avsip.ad.bl.uk:8446"
+site="https://v12l-avsip.ad.bl.uk:8446"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -165,7 +165,10 @@ def createNewsip(shelfmark, grouping="None"):
     else:
         sami_item_text = SAMI_items[0].text
         driver.execute_script("arguments[0].click();", SAMI_items[0])
-    
+
+    callnumber = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//span[contains(@data-bind, "text: selectedResult().CallNumber")]'))).text
+    physical_items = 
+
     print("\n********************************************************************************")
     print("\nSAMI Search")
     logger.info(sami_item_text)
@@ -747,7 +750,8 @@ def main():
     Auto-SIP v0.1.1 - May 2019
     
     Very much a work in progress!
-    For support christopher.weaver@bl.uk\n\n""")
+    For support christopher.weaver@bl.uk\n\n
+    """)
     
     
     

@@ -167,7 +167,9 @@ def createNewsip(shelfmark, grouping="None"):
         driver.execute_script("arguments[0].click();", SAMI_items[0])
 
     callnumber = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//span[contains(@data-bind, "text: selectedResult().CallNumber")]'))).text
-    physical_items = 
+    MARC_results = driver.wait.unil(EC.visibility_of_element_located((By.XPATH, '//div[contains(@data-bind, foreach: lookupResult().MarcEntries"]')))
+    # MARC_entries = MARC_results.find_elements_by_xpath
+    #shelfmark_items = 
 
     print("\n********************************************************************************")
     print("\nSAMI Search")

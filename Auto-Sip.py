@@ -16,6 +16,7 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import UnexpectedAlertPresentException
+from selenium.common.exceptions import SessionNotCreatedException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
@@ -29,9 +30,9 @@ import logging
 import urllib3
 urllib3.disable_warnings()
 
-# site="https://avsip.ad.bl.uk"
+site="https://avsip.ad.bl.uk"
 # # # # # # 
-site="https://v12l-avsip.ad.bl.uk:8446"
+# site="https://v12l-avsip.ad.bl.uk:8446"
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -167,9 +168,10 @@ def createNewsip(shelfmark, grouping="None"):
         driver.execute_script("arguments[0].click();", SAMI_items[0])
 
     callnumber = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//span[contains(@data-bind, "text: selectedResult().CallNumber")]'))).text
-    MARC_results = driver.wait.unil(EC.visibility_of_element_located((By.XPATH, '//div[contains(@data-bind, foreach: lookupResult().MarcEntries"]')))
+    mdark974 = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//span[contains(@data-bind, "text: lookupResult().MDARK974")]'))).text
     # MARC_entries = MARC_results.find_elements_by_xpath
     #shelfmark_items = 
+    # r = requests.get(f"http://nipper.bl.uk:8080/symws/rest/standard/searchCatalog?clientID=ARMADILLO&term1={mdark974}")
 
     print("\n********************************************************************************")
     print("\nSAMI Search")
@@ -180,7 +182,7 @@ def createNewsip(shelfmark, grouping="None"):
     driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.ID, "nav-create-button"))))
     # time.sleep(2)
     try:
-        driver.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "form-group has-feedback has-success")))
+        driver.wait.until(EC.presence_of_element_located((By.XPATH, "//label[text()='pSIP created']")))
     except TimeoutException:
         # Check for any modal popup that says the SAMi record has already been associted with a sip
         if driver.find_element_by_xpath("//button[text()='Continue ']").get_attribute('disabled') == 'true':
@@ -268,13 +270,20 @@ def source_files(directory, file_patterns, sip_id, pm_date):
         file_pattern_box.send_keys(file_pattern)
         file_pattern_box.send_keys(Keys.TAB)
         driver.execute_script("arguments[0].click();", driver.find_element_by_xpath("//*[@id='main-content']/div[3]/div/button"))
-        if len(file_patterns) != 1:
-            time.sleep(2)
+        # if len(file_patterns) != 1:
+        #     time.sleep(2)
+        time.sleep(2)
+        # Rotating cog while the file system is searched
+        driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='main-content']/div[3]/div/button")))
+        
         driver.wait.until(EC.presence_of_element_located((By.ID, "accordion")))
+        driver.wait.until(EC.presence_of_element_located((By.XPATH, "//*[@id='headingTwo']/h4/a/span[1]")))
+        
 
         # Throw an AssertionError if no files are found
         any_files = driver.find_element_by_xpath('//span[contains(text(), "Found")]')
         if " 0 files" in any_files.text:
+            print("Sorry no files found with filename {file_pattern} at {path}")
             raise AssertionError(f"Sorry no files found with filename {file_pattern} at {path}")
 
         # The files are displayed in a <ul>
@@ -413,14 +422,9 @@ def analysis(sip_id):
         j = r.json()
 
         # handle change of JSON key in new SIP v4
-        if "HasCompletedAllTransformationsSuccessfully" in j:
-            if j.get("HasCompletedAllTransformationsSuccessfully"):
-                print("\n Analysis Page has finished. We can continue")
-                break
-        elif j.get("HasCompletedAllTransformations"):
+        if j.get("HasCompletedAllTransformationsSuccessfully"):
             print("\n Analysis Page has finished. We can continue")
             break
-
         # Search the JSON for failed Analysis/Copy or transforms and retry
         elif j["NavigationState"]["NavigationSteps"][2]["Complete"] == False:
             for i, _ in enumerate(j["Files"]):
@@ -749,7 +753,9 @@ def main():
     
     print("""\n
     
-    Auto-SIP v0.1.1 - May 2019
+    Auto-SIP - Last update Agust 1st 2019
+
+    This is for Chrome version 76.
     
     Very much a work in progress!
     For support christopher.weaver@bl.uk\n\n
@@ -778,12 +784,18 @@ def main():
     options.add_argument("--start-maximized")
     # options.add_argument("--headless")
 
-
-    if getattr( sys, 'frozen', False ) :
-        driver = webdriver.Chrome(executable_path=os.path.join(sys._MEIPASS, "bin", "chromedriver.exe"), chrome_options=options)
-    else:
-        # driver = webdriver.Chrome()
-        driver = webdriver.Chrome(chrome_options=options)
+    try:
+        if getattr( sys, 'frozen', False ) :
+            driver = webdriver.Chrome(executable_path=os.path.join(sys._MEIPASS, "bin", "chromedriver.exe"), options=options)
+        else:
+            # driver = webdriver.Chrome()
+            driver = webdriver.Chrome(options=options)
+    except SessionNotCreatedException as e:
+        print("\nUnable to launch Chrome due to.......", e)
+        input("Press q to quit: ")
+        quit()
+        
+    
 #         Need to catch when the chromedriver doesn't match the current Chrome installed
 #         Exception has occurred: SessionNotCreatedException
 #        Message: session not created: Chrome version must be between 70 and 73
@@ -793,7 +805,7 @@ def main():
     # driver.maximize_window()
     
     #driver.implicitly_wait(10)
-    driver.wait = WebDriverWait(driver, 10)
+    driver.wait = WebDriverWait(driver, 120)
 
 
     SIP_tool_login(site, user, password)

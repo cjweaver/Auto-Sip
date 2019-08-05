@@ -753,7 +753,7 @@ def main():
     
     print("""\n
     
-    Auto-SIP - Last update Agust 1st 2019
+    Auto-SIP - Last update August 1st 2019
 
     This is for Chrome version 76.
     

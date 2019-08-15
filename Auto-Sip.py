@@ -247,17 +247,14 @@ def source_files(directory, file_patterns, sip_id, pm_date):
     # actually click the box
     driver.execute_script("arguments[0].click();", directory_box)
     time.sleep(2)
-    # directory_box.send_keys(Keys.CONTROL + "a");
-    # directory_box.send_keys(Keys.DELETE);
-    # time.sleep(2)
-    # directory_box.send_keys(Keys.TAB)
-    # directory_box.click()
-    directory_box.send_keys(path)
+    
+    directory_box.clear()
+    time.sleep(2)
+    
+    directory_box.send_keys("\\\\p12l-nas6\\SOS_HLF" + path)
     directory_box.send_keys(Keys.TAB)
     time.sleep(2)
-    # if directory_box.value ==
-        #else
-        # Add some code to handle if the directory box doesn't clear and is a garbled 
+    
     file_pattern_box = driver.find_element_by_xpath("//*[@id='filePatternBox']")
     driver.execute_script("arguments[0].click();", file_pattern_box)
     # file_pattern will be differnt depending on old or new file name schema
@@ -283,8 +280,8 @@ def source_files(directory, file_patterns, sip_id, pm_date):
         # Throw an AssertionError if no files are found
         any_files = driver.find_element_by_xpath('//span[contains(text(), "Found")]')
         if " 0 files" in any_files.text:
-            print("Sorry no files found with filename {file_pattern} at {path}")
-            raise AssertionError(f"Sorry no files found with filename {file_pattern} at {path}")
+            print(f"Sorry no files found with filename {file_pattern} in directory {path}")
+            raise AssertionError(f"Sorry no files found with filename {file_pattern} in directory {path}")
 
         # The files are displayed in a <ul>
         # There are two elements with class "list-group sami-container"

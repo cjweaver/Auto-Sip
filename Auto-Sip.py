@@ -25,6 +25,7 @@ import getpass
 from prompt_toolkit import prompt
 import itertools, sys
 import logging
+from xml.etree import ElementTree
 
 # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
 import urllib3
@@ -132,7 +133,7 @@ def createNewsip(shelfmark, grouping="None"):
     
     sip = driver.wait.until(EC.visibility_of_element_located((By.ID, "searchBox")))
     driver.execute_script("arguments[0].click();", sip)
-    sip.send_keys(shelfmark)
+    sip.send_keys(shelfmark+"{087}")
     # Click "Search" button
     driver.execute_script("arguments[0].click();", driver.find_element_by_xpath("//*[@id='main-content']/div[1]/div[1]/button"))
     
@@ -140,7 +141,7 @@ def createNewsip(shelfmark, grouping="None"):
     # Test to see if the search returns zero results
     driver.wait.until(EC.text_to_be_present_in_element((By.XPATH, '//*[@id="main-content"]/div[2]/div[1]/h4[2]/span'), "Found"))
     if "Found 0 results... Please try again" in driver.find_element_by_xpath('//*[@id="main-content"]/div[2]/div[1]/h4[2]/span').text:
-        raise Exception(f"Found no SAMI results with {shelfmark}. Try with zero padded shelfmark???") 
+        raise ValueError(f"Found no SAMI results with {shelfmark}. Try with zero padded shelfmark???") 
        
     
     
@@ -167,11 +168,17 @@ def createNewsip(shelfmark, grouping="None"):
         sami_item_text = SAMI_items[0].text
         driver.execute_script("arguments[0].click();", SAMI_items[0])
 
-    callnumber = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//span[contains(@data-bind, "text: selectedResult().CallNumber")]'))).text
+    #callnumber = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//span[contains(@data-bind, "text: selectedResult().CallNumber")]'))).text
     mdark974 = driver.wait.until(EC.visibility_of_element_located((By.XPATH, '//span[contains(@data-bind, "text: lookupResult().MDARK974")]'))).text
     # MARC_entries = MARC_results.find_elements_by_xpath
     #shelfmark_items = 
-    # r = requests.get(f"http://nipper.bl.uk:8080/symws/rest/standard/searchCatalog?clientID=ARMADILLO&term1={mdark974}")
+    r = requests.get(f"http://nipper.bl.uk:8080/symws/rest/standard/searchCatalog?clientID=ARMADILLO&term1={mdark974}")
+    tree = ElementTree.fromstring(r.content)
+    titleID = int(tree.find("./{http://schemas.sirsidynix.com/symws/standard}HitlistTitleInfo/{http://schemas.sirsidynix.com/symws/standard}titleID").text)
+
+    r = requests.get(f"http://nipper.bl.uk:8080/symws/rest/standard/lookupTitleInfo?clientID=ARMADILLO&marcEntryFilter=TEMPLATE&includeItemInfo=true&titleID={titleID}")
+    tree = ElementTree.fromstring(r.content)
+
 
     print("\n********************************************************************************")
     print("\nSAMI Search")
@@ -259,6 +266,11 @@ def source_files(directory, file_patterns, sip_id, pm_date):
     driver.execute_script("arguments[0].click();", file_pattern_box)
     # file_pattern will be differnt depending on old or new file name schema
 
+    # driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Get directories and files ')"))
+    # if driver.find_element_by_xpath('//span[contains(text(), "Found")]')
+    # <span data-bind="text: directoryFilesFeedback">Error calling GetDirectory(): Could not find a part of the path '\\p12l-nas6\SOS_HLF\Test\GERMANTest\GERMAN'.</span>
+
+    
     
     global file_names
     file_names = []
@@ -272,16 +284,31 @@ def source_files(directory, file_patterns, sip_id, pm_date):
         time.sleep(2)
         # Rotating cog while the file system is searched
         driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='main-content']/div[3]/div/button")))
+
+         # Throw an Error if no files or directories are found
+        try:
+            driver.find_element_by_xpath('//span[contains(@data-bind, "text: directoryFilesFeedback")]')
+        except NoSuchElementException:
+            pass
+        else:
+            print(f"Sorry cannot find that directory {path}. Check the spreadsheet.")
+            raise ValueError(f"Sorry cannot find that directory {path}. Check the spreadsheet.")
+        try:
+            driver.find_element_by_xpath('//span[contains(text(), "Found")]')
+        except NoSuchElementException:
+            pass
+        else:
+            _ = driver.find_element_by_xpath('//span[contains(text(), "Found")]').text
+            if " 0 files" in _:
+                print(f"Sorry no files found with filename {file_pattern} in directory {path}")
+                raise ValueError(f"Sorry no files found with filename {file_pattern} in directory {path}")
+    
         
         driver.wait.until(EC.presence_of_element_located((By.ID, "accordion")))
         driver.wait.until(EC.presence_of_element_located((By.XPATH, "//*[@id='headingTwo']/h4/a/span[1]")))
         
 
-        # Throw an AssertionError if no files are found
-        any_files = driver.find_element_by_xpath('//span[contains(text(), "Found")]')
-        if " 0 files" in any_files.text:
-            print(f"Sorry no files found with filename {file_pattern} in directory {path}")
-            raise AssertionError(f"Sorry no files found with filename {file_pattern} in directory {path}")
+       
 
         # The files are displayed in a <ul>
         # There are two elements with class "list-group sami-container"
@@ -715,6 +742,7 @@ def getSIPStobuild():
             # NEED To write something proper here!!!
             #filemask = shelfmark.value[-4:] + "X"
             # Need removed zero padding from shelfmark
+            filemask = (shelfmark.value).replace(" ", "")
             filemask = (shelfmark.value).replace("/", "-")
             filemask = [filemask.replace(" ", "-") + '_']
             # filemask += "_"
@@ -750,7 +778,7 @@ def main():
     
     print("""\n
     
-    Auto-SIP - Last update August 1st 2019
+    Auto-SIP - Last update August 15th 2019
 
     This is for Chrome version 76.
     

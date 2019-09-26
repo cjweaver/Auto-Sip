@@ -119,3 +119,5 @@ chromedriver.exe
 login.py
 *.log
 SIP_ID.py
+buildAUTOSIP.bat
+.gitignore

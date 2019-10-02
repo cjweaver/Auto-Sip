@@ -734,6 +734,14 @@ def getSIPStobuild():
         if shelfmark.value == None:
             # Stop reading the spreadsheet once you hit a blank shelfmark cell
             break
+
+        # The following values cannot be blank
+        if not all((directory.value, item_format.value, pm_date.value, reference_sip.value)):
+            print(f'Missing a value(s) from row {directory.row} in the SIPS spreadsheet')
+            raise AttributeError
+
+        shelfmark.value = shelfmark.value.strip()
+               
         if filename.value == None:
             #print(row)
             #print("This is the current shelfmark", shelfmark.value)
@@ -792,6 +800,10 @@ def main():
         SIPS = getSIPStobuild()
     except FileNotFoundError as e:
         print("\nUnable to find the SIPS spreadsheet\n", e)
+        input("Press q to quit: ")
+        quit()
+    except AttributeError:
+        print("\nThe SIPS spreadsheet is missing values\nPlease double check and start Auto-SIP again")
         input("Press q to quit: ")
         quit()
         

@@ -116,8 +116,12 @@ dmypy.json
 .pyre/
 
 chromedriver.exe
+chromedriver_78.exe
 login.py
 *.log
 SIP_ID.py
 buildAUTOSIP.bat
 .gitignore
+colour.py
+filename_tester_module.py
+switchtest.py

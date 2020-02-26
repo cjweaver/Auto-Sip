@@ -112,10 +112,10 @@ def check_reg_ex(filepaths, bl_regex, bl_regex_segments):
                     error = f"There is a problem with the field '{fname_seg}' in file: {fpath.name}"
                     hint = filename_hints.get(regex[0])
                     filename_errors.append(f"{error}\n{hint}")
-        if errors:
-            return (True, filename_errors)
-        else:
-            return (False, None)
+    if errors:
+        return (True, filename_errors)
+    else:
+        return (False, None)
 
 
 # def check_filename(filename, bl_regex, bl_regex_segments):

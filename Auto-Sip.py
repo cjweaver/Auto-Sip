@@ -755,7 +755,7 @@ def getSIPStobuild():
     next(rows)
     
     for row in rows:
-        shelfmark, filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory= row
+        shelfmark, filename, old_filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory= row
         if shelfmark.value == None:
             # Stop reading the spreadsheet once you hit a blank shelfmark cell
             break
@@ -786,6 +786,11 @@ def getSIPStobuild():
             # Strip any blank str from the filemask list. filter does bool(item) on filemask and only passes True items.
             # filter(None, item) - If None, the function defaults to Identity function - which returns false if any elements are false
             filemask = list(filter(None, filemask))
+
+        if old_filename.value == None:
+            old_filename = False
+        else:
+            old_filename = True
         
         dir_parts = list(map(str.strip, directory.value.split("\\")))
         directory = os.path.join(*dir_parts)
@@ -801,24 +806,26 @@ def getSIPStobuild():
                 pm_date = "NO"
             
                     
-        l = [shelfmark.value, directory, filemask, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value, log_directory.value]
+        l = [shelfmark.value, directory, filemask, old_filename, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value, log_directory.value]
         SIPS.append(l)
 
-        # for sip in SIPS:
+        for sip in SIPS:
             
-        #     def raise_error(errors):
-        #         # https://stackoverflow.com/questions/44780357/how-to-use-newline-n-in-f-string-to-format-output-in-python-3-6
-        #         raise AttributeError(f'Please correct the following filename errors: \n\n{chr(10).join(str(x) for x in errors[1])}')
+            def raise_error(errors):
+                # https://stackoverflow.com/questions/44780357/how-to-use-newline-n-in-f-string-to-format-output-in-python-3-6
+                raise AttributeError(f'Please correct the following filename errors: \n\n{chr(10).join(str(x) for x in errors[1])}')
                 
-        #     checkfilenames.connect_to_sos(UNC, sip[1])
-        #     filepaths = checkfilenames.get_file_paths(sip[2])
-        #     filename_errors = checkfilenames.check_filenames(filepaths)
-        #     regex_errors = checkfilenames.check_reg_ex(filepaths, checkfilenames.bl_regex, checkfilenames.bl_regex_segments)
-            
-        #     if filename_errors[0]:
-        #         raise_error(filename_errors)
-        #     elif regex_errors[0]:
-        #         raise_error(regex_errors)
+            checkfilenames.connect_to_sos(UNC, sip[1])
+            filepaths = checkfilenames.get_file_paths(sip[2])
+            filename_errors = checkfilenames.check_filenames(filepaths)
+            if filename_errors[0]:
+                raise_error(filename_errors)
+            if sip[3] == False:
+                regex_errors = checkfilenames.check_reg_ex(filepaths, checkfilenames.bl_regex, checkfilenames.bl_regex_segments)
+                if regex_errors[0]:
+                    raise_error(regex_errors)
+        # Remove the old_filename flag from the SIP
+        sip.pop(3)
 
                 
     return SIPS

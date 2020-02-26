@@ -45,7 +45,8 @@ site="https://avsip.ad.bl.uk"
 # SOS_HLF Drive
 UNC = r"\\p12l-nas6\SOS_HLF"
 
-
+# Number of Analysis Page retries to attempt before failing pSIP
+retry_count = 0
 
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
@@ -74,7 +75,7 @@ logging.getLogger('').addHandler(console)
 class TooManyRetries(Exception):
     pass
 
-retry_count = 0
+
 
    
 
@@ -371,7 +372,7 @@ def source_files(directory, file_patterns, sip_id, pm_date):
     
     logger.info(f"The date for the Process Metadata will be {process_metadata_date}")
     
-    print("\nIf you wish to specifiy another date, use the 'Date' column in the SIPS.xlsx")
+    print("If you wish to specifiy another date, use the 'Date' column in the SIPS.xlsx")
 
 
     time.sleep(1)
@@ -830,12 +831,13 @@ def main():
     
     print("""\n
     
-    Auto-SIP - Last update February 7th 2020
+    AutoSip - Hub Edition 
+    
+    Last update February 7th 2020
 
     This is for Chrome version 80.
     
-    Supports Vdat logs
-
+    
     Very much a work in progress!
     For support christopher.weaver@bl.uk\n\n
     """)
@@ -862,9 +864,8 @@ def main():
     # options.add_argument("--window-size=1920,1080")
     # options.add_argument("--disable-gpu")
     # options.add_argument("--disable-extensions")
+  
     options.add_argument("--start-maximized")
-    options.add_argument("'--ignore-certificate-errors'")
-
     # options.add_argument("--headless")
 
     try:

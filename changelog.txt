@@ -1,3 +1,6 @@
 v0.1 - Intial release
 v1.1 - Proper error when missing SIPS.xlsx (Kevin), Password is obsucred by *** (Yadley), Remove any whitespace or blank files in filename column in spreadsheet.
 v1.2 - Replaced WebDriver click() method with driver.execute_script("arguments[0].click(), element), fixed process metadata old of date and no sami result found
+
+Last update February 7th 2020
+File hash (checksum) failure is recorded in the log file.

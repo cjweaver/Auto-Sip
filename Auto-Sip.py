@@ -755,16 +755,17 @@ def getSIPStobuild():
     next(rows)
     
     for row in rows:
+        
         shelfmark, filename, old_filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory= row
         if shelfmark.value == None:
             # Stop reading the spreadsheet once you hit a blank shelfmark cell
             break
-
+        
+        
         # The following values cannot be blank
         if not all((directory.value, item_format.value, pm_date.value, reference_sip.value)):
-            raise AttributeError(f'Missing a value(s) from row {directory.row} in the SIPS spreadsheet')
+            raise AttributeError(f'Missing a required value(s) from row {directory.row} in the SIPS spreadsheet')
 
-        
         
         shelfmark.value = shelfmark.value.strip()
                
@@ -809,8 +810,17 @@ def getSIPStobuild():
         l = [shelfmark.value, directory, filemask, old_filename, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value, log_directory.value]
         SIPS.append(l)
 
+        # Check filenames
+        print("\nChecking filenames...\n\n")
+
+        # FIX ME
+        # This reports 'Fine' if the directory is empty of files!!!!
+
+
         for sip in SIPS:
             
+            print()
+
             def raise_error(errors):
                 # https://stackoverflow.com/questions/44780357/how-to-use-newline-n-in-f-string-to-format-output-in-python-3-6
                 raise AttributeError(f'Please correct the following filename errors: \n\n{chr(10).join(str(x) for x in errors[1])}')
@@ -826,6 +836,7 @@ def getSIPStobuild():
                     raise_error(regex_errors)
         # Remove the old_filename flag from the SIP
         sip.pop(3)
+        print("All filenames file.")
 
                 
     return SIPS
@@ -837,11 +848,13 @@ def main():
     
     print("""\n
     
-    Auto-SIP - Last update February 7th 2020
+    Auto-SIP - Last update March 5th 2020
 
     This is for Chrome version 80.
     
-    Supports Vdat logs
+    Supports VDAT logs and will check filenames against new filename scheme.
+
+    Please make sure that you use the new SIPS.xls spreadsheet
 
     Very much a work in progress!
     For support christopher.weaver@bl.uk\n\n
@@ -850,6 +863,11 @@ def main():
         
     try:
         SIPS = getSIPStobuild()
+
+    except ValueError:
+        print("\nMissing columns from the spreadsheet. This version of AutoSIP requires 'Old BL Filename?' as one of the column headings.\n")
+        end_prog()
+
     except FileNotFoundError as e:
         print("\nUnable to find the SIPS spreadsheet\n", e)
         end_prog()

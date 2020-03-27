@@ -20,12 +20,12 @@ bl_regex_segments = {
 
 # List of filename field rules. Taken from the document: "Blah Blah"
 filename_hints = {
-                    'orignator': "orignator is two letter", 
-                    'shelf mark': "No slashes", 
-                    'item': "Don't pad", 
-                    'side': "pad for ten and uner", 
-                    'file': "File is wrong", 
-                    'version': "Version missing"
+                    'orignator': "First part of filename should be ‘originator’ i.e 'BL_\n", 
+                    'shelf mark': "Please check the shelf mark section of the filename\n", 
+                    'item': "Precede the item number with an ‘i’ character. Do not pad with zeros\n", 
+                    'side': "Precede the side number with an ‘s’ character. For born-digital files use ‘s0’.\n", 
+                    'file': "This field requires two digits, so files under ten should be padded with a single zero (e.g. 01, 02, and 09)\n", 
+                    'version': "Record the version number of the file. Do not pad with zeros\n"
                     }
 
 
@@ -96,6 +96,8 @@ def check_reg_ex(filepaths, bl_regex, bl_regex_segments):
     
     filename_errors = []
     errors = False
+
+    # Need to differentiate between a field missing and a field being wrong.
 
     for fpath in filepaths:
         if not re.match(bl_regex, fpath.stem):

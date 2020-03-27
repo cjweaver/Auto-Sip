@@ -125,3 +125,8 @@ buildAUTOSIP.bat
 colour.py
 filename_tester_module.py
 switchtest.py
+nipper.xml
+clear_om_fields.py
+physical_struct.py
+PhysicalRegEx.py
+.vscode

@@ -1,45 +1,40 @@
-import datetime
-import time
-import openpyxl
-import os
-import json
-import sys
-import re
-# from tkinter import *
-# from tkinter import filedialog
-import warnings
-import requests
-from selenium import webdriver
-from selenium.webdriver.support.select import Select
-from selenium.webdriver.support import ui
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
-from selenium.common.exceptions import NoSuchElementException
-from selenium.common.exceptions import UnexpectedAlertPresentException
-from selenium.common.exceptions import SessionNotCreatedException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
-#from login import site, user, password
-import getpass
-from prompt_toolkit import prompt
-import itertools, sys
-import logging
-from xml.etree import ElementTree
 import checkfilenames
+import datetime
+import getpass
+import itertools
+import json
+import logging
 import msvcrt
-
-
-
-
+import os
+import re
+import sys
+import time
+import warnings
+from xml.etree import ElementTree
+import openpyxl
+import requests
+import urllib3
+from prompt_toolkit import prompt
+from selenium import webdriver
+from selenium.common.exceptions import (NoSuchElementException,
+                                        SessionNotCreatedException,
+                                        TimeoutException,
+                                        UnexpectedAlertPresentException)
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import ui
+from selenium.webdriver.support.select import Select
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
-import urllib3
 urllib3.disable_warnings()
 
+# Live SIP Tool Website
 site="https://avsip.ad.bl.uk"
-# # # # # # 
+
+# DEV SIP Tool Website 
 # site="https://v12l-avsip.ad.bl.uk:8450"
 
 # SOS_HLF Drive

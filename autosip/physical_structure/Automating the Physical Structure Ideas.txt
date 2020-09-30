@@ -1,0 +1,24 @@
+Automating the Physical Structure Ideas:
+
+The order is important!
+
+structure = 'C604/640-C604/649; C604/64'
+
+1) Remove all instance of shelfmark and whitespace
+structure.replace('C604/', '').replace(' ', '')
+
+2) Search for hypenated number ranges and record their position
+ 
+
+
+
+
+2)Make a list, spliting on the ',' 
+
+structure = structure.split(',')
+
+then remove the white space
+
+3) 
+C604/223; C604/221; C604/225; C604/222
+C604/640-C604/649; C604/64

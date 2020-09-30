@@ -1,0 +1,51 @@
+
+
+Split on ; then split on "-" to get a range
+
+
+
+Examples:
+
+
+Show up in SIP tool as: C796/157; C796/147-C796/149
+Group C796/157 contains: /147, /148, /149 and /157
+
+
+
+
+
+Group /218
+C796/218-C796/220; C796/222-C796/225
+
+
+
+
+groups with sub shelf marks?
+
+
+
+
+
+SAMI_result = "C796/218-C796/220; C796/222-C796/225".split(";")
+
+for result in SAMI_result:
+	shelfmark, subshelfmark = result.split("-")
+
+
+
+
+SELECT Main.Transfer_Engineer, Count(Main.Shelfmark) AS CountOfShelfmark
+FROM Main
+WHERE (((Main.PSIP_Date) Between #3/1/2019# And #3/31/2019#))
+GROUP BY Main.Transfer_Engineer;
+
+
+SELECT Year([PSIP_Date]) AS PSIP_Year, Month([PSIP_Date]) AS PSIP_Month, Sum(Nz([Item_NumberOf],1)+0) AS Corrected_Items, Count(Main.PSIP_Date) AS CountOfPSIP_Date
+FROM Main
+GROUP BY Year([PSIP_Date]), Month([PSIP_Date])
+HAVING (((Month([PSIP_Date])) Is Not Null));
+
+
+
+
+1LP0192440 added three parent recordings, deleted one and then saved.

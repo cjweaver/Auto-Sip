@@ -1,0 +1,1377 @@
+﻿@section SidebarHeader { @Html.Partial("~/Views/Shared/_ProcessOverviewHeader.cshtml") }
+@section SidebarFooter { @Html.Partial("~/Views/Shared/_ProcessOverviewFooter.cshtml") }
+
+<div class="jumbotron">
+    <h1>File Analysis, Validation, and Transformation</h1>
+    <p class="lead">Please wait while the source files are copied to the server and analyzed. If analysis is successful they will then be transformed in the background.</p>
+</div>
+
+@Html.Partial("~/Views/Shared/_PageNav.cshtml")
+@Html.Partial("~/Views/Shared/_SIPTitle.cshtml")
+
+
+@*<style>
+.collapse.in {
+      height: auto !important;
+}
+</style>*@
+
+<script id="file-transcode-options-template" type="text/html">
+    <div>
+        <span data-bind="text: SourcePath"></span>
+        <button type="button" class="btn btn-default btn-xs" data-bind="click: $root.requestTransformationClick">Retry</button>
+
+        @if (Convert.ToBoolean(System.Configuration.ConfigurationManager.AppSettings["EnableTestMode"]))
+        {
+                <span class="debug">
+                    <span class="checkbox-spacer"> Fail Initial 4xx <input type="checkbox" data-bind="checked: ForceFailTransformationInitial4xx" /></span>
+                    <span class="checkbox-spacer"> Fail Initial 5xx (retryable) <input type="checkbox" data-bind="checked: ForceFailTransformationInitial5xx" /></span>
+                    <span class="checkbox-spacer"> Fail Validation Checksum <input type="checkbox" data-bind="checked: ForceFailValidationChecksum" /></span>
+                    <span class="checkbox-spacer"> Fail Validation <input type="checkbox" data-bind="checked: ForceFailValidation" /></span>
+                </span>
+        }
+    </div>
+</script>
+
+<script id="file-transformed-template" type="text/html">
+    <div>
+        <span data-bind="text: SourcePath"></span>
+    </div>
+</script>
+
+    <script id="file-analysis-template" type="text/html">
+        @*<pre data-bind="text: ko.toJSON($data, null, 2)"></pre>*@
+
+        <div class="panel-group col-sm-12" role="tablist" aria-multiselectable="true" data-bind="attr:{fileid:'accordion'+$index()}"> <!-- 'panel-danger': copied() && ((analysisCompleted() && failed()) || verified() == 0) -->
+            <div class="panel panel-default" data-bind="css: {'panel-default': !copied(), 'panel-success': (copied() && (verified())), 'panel-danger': failed(), 'panel-warning': copied() && (verified() != 1) }">
+                <div class="panel-heading" role="tab" data-bind="attr:{fileid:'heading'+$index()}">
+                    <div class="row">
+                        <h4 class="panel-title col-sm-10">
+                            <a data-bind="attr:{href:'#collapse'+$index(), 'aria-controls':'collapse'+$index(), 'data-parent':'#accordion'+$index()}" data-toggle="collapse" aria-expanded="false">
+                                <span data-bind="text: sourcePath"></span>
+                            </a>
+                        </h4>
+                        <div class="col-sm-2 clearfix">
+                            <button class="btn btn-default pull-right btn-copy" type="button" data-bind="click: $parent.copyFileClick, visible: $parent.showCopyButton($data), css: {'btn-success': copied, 'btn-danger': copied() && (failed() || verified() == 0), 'btn-warning': copied() && (verified() == -1)}">
+                                Copy
+                            </button>
+                            <button class="btn btn-default pull-right" type="button" data-bind="click: $parent.requestTransformationClick, visible: $parent.showTransformationButton($data), css: {'btn-success': copied, 'btn-danger': copied() && (failed() || verified() == 0), 'btn-warning': copied() && (verified() == -1)}">
+                                Transform
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div data-bind="attr:{fileid:'collapse'+$index(), 'aria-labelledby':'heading'+$index()}" class="panel-collapse collapse in" role="tabpanel">
+                    <div class="panel-content">
+                        <!-- ko ifnot: copied -->
+                        <p>Copy file to see data analysis.</p>
+                        <!-- /ko -->
+
+                        <div class="row" data-bind="visible: copied">
+                            <div class="col-sm-2">
+                                <h4>Copied:</h4>
+                                <p data-bind="text: copied() ? 'Ok' : 'Error'"></p>
+                            </div>
+                            <div class="col-sm-2">
+                                <h4>Checksum:</h4>
+                                <p data-bind="text: $parent.verificationStatus(verified())"></p>
+                            </div>
+
+                            <!-- ko if: analysisCompleted -->
+                            <div class="col-sm-2">
+                                <h4>DROID:</h4>
+                                <p data-bind="text: $parent.getFileTestStatus(isDROIDValid())"></p>
+                            </div>
+                            <div class="col-sm-2">
+                                <h4>MediaInfo:</h4>
+                                <p data-bind="text: $parent.getFileTestStatus(isMediaInfoValid())"></p>
+                            </div>
+                            <div class="col-sm-2">
+                                <h4>JHOVE:</h4>
+                                <p data-bind="text: $parent.getJHOVETestStatus(isJHOVETestPassed(), isJHOVEValid())"></p>
+                            </div>
+                            <div class="col-sm-2">
+                                <h4>Locked:</h4>
+                                <p data-bind="text: locked() ? 'Ok' : 'Error'"></p>
+                            </div>
+                            @*<div class="col-sm-3" data-bind="visible: duration">
+                                    <h4>Schematron:</h4>
+                                    <p data-bind="">n/a</p>
+                                </div>*@
+                            <!-- /ko -->
+                        </div>
+
+                        <div class="row">
+                            <div class="col-sm-4">
+                                <h4>Basic Info:</h4>
+                                <div>Size: <span data-bind="text: sizeHuman"></span></div>
+                                <div>Duration: <span data-bind="text: duration"></span></div>
+                            </div>
+
+                            <div class="col-sm-4" data-bind="visible: vBitRate">
+                                <h4>Video:</h4>
+                                <div>BitRate: <span data-bind="text: vBitRate"></span></div>
+                                <div>ColorModel: <span data-bind="text: vColorModel"></span></div>
+                                <div>Format: <span data-bind="text: vFormat"></span></div>
+                                <div>Fps: <span data-bind="text: vFps"></span></div>
+                            </div>
+
+                            <div class="col-sm-4" data-bind="visible: aBitRate">
+                                <h4>Audio:</h4>
+                                <div>BitRate: <span data-bind="text: aBitRate"></span></div>
+                                <div>ChannelOutput: <span data-bind="text: aChannelOutput"></span></div>
+                                <div>Format: <span data-bind="text: aFormat"></span></div>
+                                <div>SampleRate: <span data-bind="text: aSampleRate"></span></div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <strong>Analysis Stats:</strong>
+                                <span>Copy wait time: <span data-bind="text: copyWaitTime"></span></span>,
+                                <span>Copy time taken: <span data-bind="text: copyTimeTaken"></span></span>,
+                                <span>Analysis wait time: <span data-bind="text: analysisWaitTime"></span></span>,
+                                <span>Analysis time taken: <span data-bind="text: analysisTimeTaken"></span></span>
+                            </div>
+                        </div>
+
+                        <div class="row" data-bind="visible: validationError">
+                            <div class="col-sm-12">
+                                <h4>File has failed validation:</h4>
+                                <div data-bind="text: validationError"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script id="event-unknown" type="text/html">
+        <p class="text-success">Unknown file processing event!?</p>
+    </script>
+
+    <script id="copy-start" type="text/html">
+        <hr />
+        <p>Copying <span data-bind="text: message"></span></p>
+    </script>
+
+    <script id="error" type="text/html">
+        <p class="text-danger"><strong>Error: <span data-bind="text: message"></span></strong></p>
+    </script>
+
+    <script id="copy-ok" type="text/html">
+        <p class="text-success">Successfully copied file</p>
+    </script>
+
+    <script id="checksum-failed" type="text/html">
+        <p class="text-danger"><strong>Checksum failed: <span data-bind="text: message"></span></strong></p>
+    </script>
+
+    <script id="no-checksum" type="text/html">
+        <p class="text-warning"><strong>No checksum: <span data-bind="text: message"></span></strong></p>
+    </script>
+
+    <script id="error-calling" type="text/html">
+        <p class="text-danger"><strong>Error calling: <span data-bind="text: message"></span></strong></p>
+    </script>
+
+    <script id="analyzing" type="text/html">
+        <p>Analyzing <span data-bind="text: message"></span></p>
+    </script>
+
+    <script id="error-analyzing" type="text/html">
+        <p class="text-danger"><strong>Error analyzing file <span data-bind="text: message"></span></strong></p>
+    </script>
+
+    <script id="analyze-ok" type="text/html">
+        <p class="text-success">Successfully analysed file</p>
+    </script>
+
+    <script id="analyze-skipped" type="text/html">
+        <p class="text-success">Skipped AV analysis (not AV file type)</p>
+    </script>
+
+    <div id="analyze-files">
+        @Html.Partial("~/Views/Shared/_SIPLoading.cshtml")
+        @Html.Partial("~/Views/Shared/_MainWrapper.cshtml")
+
+        <div id="main-content" data-bind="visible: !getSIPInProgress()">
+            <div class="row" id="copy-files-buttons">
+                <div class="col-md-6">
+                    <h4>Copy file/s to see analysis data.</h4>
+
+                    <div class="margin-bottom-s clearfix">
+                        <div class="btn-group pull-right" role="group">
+                            <button class="btn btn-default btn-copy" type="button" data-bind="click: copyAllFilesClick, disable: (fileOperationInProgress() || (copyAwaiting().length == 0))">Copy All Files (Overwrite)</button>
+                            <button class="btn btn-default" type="button" data-bind="disable: fileOperationInProgress" data-container="body" data-toggle="popover"
+                                    data-placement="left" data-trigger="focus" data-content="Copy all files from the source, overwriting any already on the server.">
+                                <span class="glyphicon glyphicon-question-sign"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    @*<div class="clearfix">
+        <div class="btn-group pull-right" role="group">
+            <button class="btn btn-default" type="button" data-bind="click: initialAnalysisClick, disable: ((filescopyAwaiting().length == 0) || fileOperationInProgress)">Copy All Files (Resume)</button>
+            <button class="btn btn-default" type="button" data-bind="disable: fileOperationInProgress" data-container="body" data-toggle="popover"
+                    data-placement="left" data-trigger="focus" data-content="Do not overwrite files already copied to the server.">
+                <span class="glyphicon glyphicon-question-sign"></span>
+            </button>
+        </div>
+    </div>*@
+                </div>
+            </div>
+
+
+            @if (Convert.ToBoolean(System.Configuration.ConfigurationManager.AppSettings["EnableTestMode"]))
+            {
+                <div class="row debug">
+                    <div class="col-xs-12">
+                        <div class="row margin-bottom-s">
+                            <h3 class="col-md-12">
+                                Copy and Analysis Debug Options
+                            </h3>
+                            <div class="col-md-12">
+                                <span class="checkbox-spacer" data-bind=""> Force file copy to server failure: <input type="checkbox" data-bind="checked: forceCopyToServerFailure" /></span>
+                                <span class="checkbox-spacer" data-bind=""> Force file copy to server failure (checksum): <input type="checkbox" data-bind="checked: forceCopyToServerFailureChecksum" /></span>
+                                <span class="checkbox-spacer" data-bind=""> Force file analysis failure: <input type="checkbox" data-bind="checked: forceAnalysisFailure" /></span>
+                                <br /><span class="checkbox-spacer" data-bind=""> Automatically put file on transformation queue after analysis completed (untick this if you want to set transformation debug options): <input type="checkbox" data-bind="checked: automaticallyTransform" /></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Files awaiting copy request to server -->
+            <div class="row" data-bind="visible: (copyAwaiting().length > 0)">
+                <div class="col-xs-12">
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" data-bind="css: $root.getStepStateBackground((copyAwaiting().length == 0), (copyAwaiting().length > 0), false)">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#awaiting-copy-collapse">
+                                        <span class="step-icon" data-bind="css: $root.getStateIcon((copyAwaiting().length == 0), (copyAwaiting().length > 0), false)"></span>
+                                        <span class="step-title">Awaiting Copy Request (<span data-bind="text: copyAwaiting().length"></span>)</span>
+                                        @*<span data-bind="visible: initialGetSIPFiles" class="glyphicon glyphicon-refresh glyphicon-spin" style="font-size: 1.4em; margin-left: 10px;"></span>*@
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="awaiting-copy-collapse" class="panel-collapse collapse" data-bind="style: { height: (copyAwaiting().length * 235) + 'px' }">
+                                <div data-bind="if: (copyAwaiting().length == 0)">There are no files awaiting copy requests.</div>
+                                <div data-bind="template: { name: 'file-analysis-template', foreach: copyAwaiting },
+                                                style: { height: $root.calculateFilePanelHeight(copyAwaiting().length, 235, 20) + 'px' }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Files requested to be copied to the server -->
+            <div class="row" data-bind="visible: (copyRequested().length > 0)">
+                <div class="col-xs-12">
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" data-bind="css: $root.getStepStateBackground(true, false, false)">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#copy-requested-collapse">
+                                        <span class="step-icon" data-bind="css: $root.getStateIcon(false, false, false, true)"></span>
+                                        <span class="step-title">Copy Requested (<span data-bind="text: copyRequested().length"></span>)</span>
+                                        @*<span data-bind="visible: initialGetSIPFiles" class="glyphicon glyphicon-refresh glyphicon-spin" style="font-size: 1.4em; margin-left: 10px;"></span>*@
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="copy-requested-collapse" class="panel-collapse collapse" data-bind="style: { height: (copyRequested().length * 235) + 'px' }">
+                                <div data-bind="if: (copyRequested().length == 0)">There are no files which have been requested to be copied to the server.</div>
+                                <div data-bind="template: { name: 'file-analysis-template', foreach: copyRequested },
+                                                style: { height: $root.calculateFilePanelHeight(copyRequested().length, 235, 20) + 'px' }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Files copying to server -->
+            <div class="row" data-bind="visible: (copyInProgress().length > 0)">
+                <div class="col-xs-12">
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" data-bind="css: $root.getStepStateBackground(true, false, false)">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#copying-collapse">
+                                        <span class="step-icon" data-bind="css: $root.getStateIcon(false, false, false, true)"></span>
+                                        <span class="step-title">Copying (<span data-bind="text: copyInProgress().length"></span>)</span>
+                                        @*<span data-bind="visible: initialGetSIPFiles" class="glyphicon glyphicon-refresh glyphicon-spin" style="font-size: 1.4em; margin-left: 10px;"></span>*@
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="copying-collapse" class="panel-collapse collapse" data-bind="style: { height: (copyInProgress().length * 235) + 'px' }">
+                                <div data-bind="if: (copyInProgress().length == 0)">There are no files copying to the server.</div>
+                                <div data-bind="template: { name: 'file-analysis-template', foreach: copyInProgress },
+                                                style: { height: $root.calculateFilePanelHeight(copyInProgress().length, 235, 20) + 'px' }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Files failed copy -->
+            <div class="row" data-bind="visible: (copyFailed().length > 0)">
+                <div class="col-xs-12">
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" data-bind="css: $root.getStepStateBackground(false, false, true)">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#copy-failed-collapse">
+                                        <span class="step-icon" data-bind="css: $root.getStateIcon(false, false, true)"></span>
+                                        <span class="step-title">Failed Copy (<span data-bind="text: copyFailed().length"></span>)</span>
+                                        @*<span data-bind="visible: initialGetSIPFiles" class="glyphicon glyphicon-refresh glyphicon-spin" style="font-size: 1.4em; margin-left: 10px;"></span>*@
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="copy-failed-collapse" class="panel-collapse collapse" data-bind="style: { height: (copyFailed().length * 235) + 'px' }">
+                                <div data-bind="if: (copyFailed().length == 0)">There are no files which have failed to copy to the server.</div>
+                                <div data-bind="template: { name: 'file-analysis-template', foreach: copyFailed },
+                                                style: { height: $root.calculateFilePanelHeight(copyFailed().length, 235, 20) + 'px' }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Files awaiting analysis -->
+            <div class="row" data-bind="visible: (analysisRequested().length > 0)">
+                <div class="col-xs-12">
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" data-bind="css: $root.getStepStateBackground(true, false, false)">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#awaiting-analysis-collapse">
+                                        <span class="step-icon" data-bind="css: $root.getStateIcon(false, false, false, true)"></span>
+                                        <span class="step-title">Awaiting Analysis (<span data-bind="text: analysisRequested().length"></span>)</span>
+                                        @*<span data-bind="visible: initialGetSIPFiles" class="glyphicon glyphicon-refresh glyphicon-spin" style="font-size: 1.4em; margin-left: 10px;"></span>*@
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="awaiting-analysis-collapse" class="panel-collapse collapse" data-bind="style: { height: (analysisRequested().length * 235) + 'px' }">
+                                <div data-bind="if: (analysisRequested().length == 0)">There are no files awaiting analysis.</div>
+                                <div data-bind="template: { name: 'file-analysis-template', foreach: analysisRequested },
+                                                style: { height: $root.calculateFilePanelHeight(analysisRequested().length, 235, 20) + 'px' }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Files being analysed -->
+            <div class="row" data-bind="visible: (analysisInProgress().length > 0)">
+                <div class="col-xs-12">
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" data-bind="css: $root.getStepStateBackground(true, false, false)">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#analysis-inprogress-collapse">
+                                        <span class="step-icon" data-bind="css: $root.getStateIcon(false, false, false, true)"></span>
+                                        <span class="step-title">Analysis In Progress (<span data-bind="text: analysisInProgress().length"></span>)</span>
+                                        @*<span data-bind="visible: initialGetSIPFiles" class="glyphicon glyphicon-refresh glyphicon-spin" style="font-size: 1.4em; margin-left: 10px;"></span>*@
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="analysis-inprogress-collapse" class="panel-collapse collapse" data-bind="style: { height: (analysisInProgress().length * 235) + 'px' }">
+                                <div data-bind="if: (analysisInProgress().length == 0)">There are no files being analysed.</div>
+                                <div data-bind="template: { name: 'file-analysis-template', foreach: analysisInProgress },
+                                                style: { height: $root.calculateFilePanelHeight(analysisInProgress().length, 235, 20) + 'px' }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Files failed analysis -->
+            <div class="row" data-bind="visible: (analysisFailed().length > 0)">
+                <div class="col-xs-12">
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" data-bind="css: $root.getStepStateBackground(false, false, true)">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#analysis-failed-collapse">
+                                        <span class="step-icon" data-bind="css: $root.getStateIcon(false, false, true)"></span>
+                                        <span class="step-title">Failed Analysis (<span data-bind="text: analysisFailed().length"></span>)</span>
+                                        @*<span data-bind="visible: initialGetSIPFiles" class="glyphicon glyphicon-refresh glyphicon-spin" style="font-size: 1.4em; margin-left: 10px;"></span>*@
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="analysis-failed-collapse" class="panel-collapse collapse" data-bind="style: { height: (analysisFailed().length * 235) + 'px' }">
+                                <div data-bind="if: (analysisFailed().length == 0)">There are no files which have failed analysis.</div>
+                                <div data-bind="template: { name: 'file-analysis-template', foreach: analysisFailed },
+                                                style: { height: $root.calculateFilePanelHeight(analysisFailed().length, 235, 20) + 'px' }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @*<!-- Files which have been validated [REDUNDANT: Valid files (successfully copied and analysed) now go straight on to transformation queue -->
+    <div class="row">
+        <div class="col-xs-12">
+
+            <div class="panel-group">
+                <div class="panel panel-default">
+                    <div class="panel-heading" data-bind="css: $root.getStepStateBackground(((sourceFilesValidated().length + sourceFiles().length) == sourceFilesValidated().length), (sourceFilesValidated().length == 0), false)">
+                        <h4 class="panel-title">
+                            <a data-toggle="collapse" href="#validated-files-collapse">
+                                <span class="step-icon" data-bind="css: $root.getStateIcon(((sourceFilesValidated().length + sourceFiles().length) == sourceFilesValidated().length), (sourceFilesValidated().length == 0), false)"></span>
+                                <span class="step-title">Validated Files (<span data-bind="text: sourceFilesValidated().length"></span>)</span>
+                            </a>
+                        </h4>
+                    </div>
+                    <div id="validated-files-collapse" class="panel-collapse collapse" data-bind="style: { height: (sourceFilesValidated().length * 235) + 'px' }">
+                        <div data-bind="if: (sourceFilesValidated().length == 0)">There are no validated files.</div>
+                        <div data-bind="template: { name: 'file-analysis-template', foreach: sourceFilesValidated },
+                                        style: { height: $root.calculateFilePanelHeight(sourceFilesValidated().length, 235, 20) + 'px' }"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>*@
+
+
+            @if (Convert.ToBoolean(System.Configuration.ConfigurationManager.AppSettings["EnableTestMode"]))
+            {
+                <div class="row debug">
+                    <div class="col-xs-12">
+                        <div class="row margin-bottom-s">
+                            <h3 class="col-md-12">
+                                Transformation Debug Options
+                            </h3>
+                            <div class="col-md-12">
+                                @*<div> Submit files for transformation immediately after successful analysis <input type="checkbox" data-bind="checked: requestTransformationImmediately" /></div>*@
+                                <div>NB: "Fail Initial 4xx/5xx", "Fail Validation Checksum", and "Fail Validation" will only affect dummy transformations, not requests to the live transformation service.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+
+            <!-- Valid files that are awaiting transformation on the queue -->
+            <div class="row" data-bind="visible: (transformationAwaiting().length > 0)">
+                <div class="col-xs-12">
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" data-bind="css: $root.getStepStateBackground(false, true, false)">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#awaiting-transformation-files-collapse">
+                                        <span class="step-icon" data-bind="css: $root.getStateIcon(false, true, false)"></span>
+                                        <span class="step-title">Files Awaiting Transformation (<span data-bind="text: transformationAwaiting().length"></span>)</span>
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="awaiting-transformation-files-collapse" class="panel-collapse collapse">
+                                <div data-bind="template: { name: 'file-transcode-options-template', foreach: transformationAwaiting },
+                                                style: { height: $root.calculateFilePanelHeight(transformationAwaiting().length, 20, 10) + 'ph' }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Files that are in the process of being transformed -->
+            <div class="row" data-bind="visible: (transformationInProgress().length > 0)">
+                <div class="col-xs-12">
+                    <div class="panel-group" id="accordion">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" data-bind="css: $root.getStepStateBackground(true, false, false)">
+                                <h4 class="panel-title">
+                                    <a id="transformation-inprogress-files-collapse-header" data-toggle="collapse" data-parent="#accordion" href="#transformation-inprogress-files-collapse">
+                                        <span class="step-icon" data-bind="css: $root.getStateIcon(false, false, false, true)"></span>
+                                        <span class="step-title">Transformations in progress (<span data-bind="text: transformationInProgress().length"></span>)</span>
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="transformation-inprogress-files-collapse" class="panel-collapse collapse" data-bind="style: { height: $root.calculateFilePanelHeight(transformationInProgress().length, 40, 30) }">
+                                <div id="transformation-inprogress-files-collapse-items" class="col-md-12 small" data-bind="foreach: { data: transformationInProgress, afterRender: $root.afterRendertransformationInProgress},
+                                     style: { height: $root.calculateFilePanelHeight(transformationInProgress().length, 40, 30) + 'ph' }">
+                                    <div class="file-item">
+                                        <div>
+                                            <span data-bind="text: SourceDir"></span><span data-bind="text: SourceFileName"></span>
+                                            @if (Convert.ToBoolean(System.Configuration.ConfigurationManager.AppSettings["EnableTestMode"]))
+                                            {
+                                                <span class="debug">
+                                                    <!-- IsDummy visibility for Transformation service, as we can't send force fail params to the live service -->
+                                                    <span class="checkbox-spacer" data-bind="visible: (IsDummy && IsAwaitingTransformationSubmission)"> Fail Initial 4xx<input type="checkbox" data-bind="checked: ForceFailTransformationInitial4xx, event:{ change: function () { $root.updateTransformationFailFlags($root, $data, $parent) }}" /></span>
+                                                    <span class="checkbox-spacer" data-bind="visible: (IsDummy && IsAwaitingTransformationSubmission)"> Fail Initial 5xx (retryable) <input type="checkbox" data-bind="checked: ForceFailTransformationInitial5xx, event:{ change: function () { $root.updateTransformationFailFlags($root, $data, $parent) }}" /></span>
+                                                    <span class="checkbox-spacer" data-bind="visible: (IsDummy && (IsAwaitingTransformationSubmission || IsAwaitingTransformationCallback))"> Fail Validation Checksum <input type="checkbox" data-bind="checked: ForceFailValidationChecksum, event:{ change: function () { $root.updateTransformationFailFlags($root, $data, $parent) }}" /></span>
+                                                    <span class="checkbox-spacer" data-bind="visible: (IsDummy && (IsAwaitingTransformationSubmission || (IsAwaitingTransformationCallback || IsAwaitingTransformationValidation)))"> Fail Validation <input type="checkbox" data-bind="checked: ForceFailValidation, event:{ change: function () { $root.updateTransformationFailFlags($root, $data, $parent) }}" /></span>
+                                                </span>
+                                            }
+                                        </div>
+
+                                        @if (Convert.ToBoolean(System.Configuration.ConfigurationManager.AppSettings["EnableTestMode"]))
+                                        {
+                                            <div class="debug-tight small" data-bind="visible: ($root.transformationActionAllowed && IsAwaitingTransformationCallback)">
+                                                <a class="btn btn-sm" data-bind="enable: $root.transformationActionAllowed(), css: { 'disabled' : !$root.transformationActionAllowed() }, click: function () { $root.transformationSuccessClick($data) }">Invoke Tranformation Callback Success</a>
+                                                <a class="btn btn-sm" data-bind="enable: $root.transformationActionAllowed(), css: { 'disabled' : !$root.transformationActionAllowed() }, click: function () { $root.transformationFailClick($data) }">Invoke Tranformation Callback Failure</a>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Failed transformation -->
+            <div class="row" data-bind="visible: (transformationFailed().length > 0)">
+                <div class="col-xs-12">
+
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" data-bind="css: $root.getStepStateBackground(false, false, true)">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#failed-transformation-files-collapse">
+                                        <span class="step-icon" data-bind="css: $root.getStateIcon(false, false, true)"></span>
+                                        <span class="step-title">Files Failed Transformation (<span data-bind="text: transformationFailed().length"></span>)</span>
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="failed-transformation-files-collapse" class="panel-collapse collapse">
+                                <div data-bind="template: { name: 'file-transcode-options-template', foreach: transformationFailed }"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Passed transformation -->
+            <div class="row" data-bind="visible: (transformationCompleted().length > 0)">
+                <div class="col-xs-12">
+                    <div class="panel-group">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" data-bind="css: $root.getStepStateBackground(true, false, false)">
+                                <h4 class="panel-title">
+                                    <a data-toggle="collapse" href="#transformed-files-collapse">
+                                        <span class="step-icon" data-bind="css: $root.getStateIcon(true, false, false)"></span>
+                                        <span class="step-title">Files Transformed (<span data-bind="text: transformationCompleted().length"></span>)</span>
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="transformed-files-collapse" class="panel-collapse collapse">
+                                <div data-bind="template: { name: 'file-transformed-template', foreach: transformationCompleted }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            @*<!-- Start: Modal analysis progress overlay -->
+
+    <div class="modal" id="logModal" tabindex="-1" role="dialog" aria-labelledby="Current file progress" aria-hidden="true">
+        <div class="modal-dialog ">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button data-bind="if: filesRemaining() == 0" type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <div data-bind="if: filesRemaining() > 0">
+                        <p class="margin-bottom-none"><strong>Please wait while <span data-bind="if: filesCurrentTotal() > 1">files are</span><span data-bind="if: filesCurrentTotal() == 1">file is</span> copied and analysed</strong></p>
+                    </div>
+                    <div data-bind="if: filesRemaining() == 0">
+                        <p class="margin-bottom-none"><strong>Copying and analysis complete</strong></p>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <p>Total: <span data-bind="text: filesCurrentTotal"></span></p>
+                        </div>
+                        <div class="col-sm-3">
+                            <p>Remaining: <span data-bind="text: filesRemaining"></span></p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <p>Successful: <b><span class="text-success" data-bind="text: filesProcessedOKNoWarnings"></span></b></p>
+                        </div>
+                        <div class="col-sm-3">
+                            <p>Warning: <b><span class="text-warning" data-bind="text: filesProcessedWarnings"></span></b></p>
+                        </div>
+                        <div class="col-sm-3">
+                            <p>Failed: <b><span class="text-danger" data-bind="text: filesProcessedFailed"></span></b></p>
+                        </div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-success" data-bind="style:{width: filesProcessedOKNoWarningsPercentage}"></div>
+                        <div class="progress-bar progress-bar-warning" data-bind="style:{width: filesProcessedWarningsPercentage}"></div>
+                        <div class="progress-bar progress-bar-danger" data-bind="style:{width: filesProcessedFailedPercentage}"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End: Modal analysis progress overlay -->*@
+
+        </div>
+
+        @Html.Partial("~/Views/Shared/_MainWrapperFooter.cshtml")
+    </div>
+
+@Html.Partial("~/Views/Shared/_PageNav.cshtml")
+
+    <script type="text/javascript">
+        function AnalyzeFilesViewModel(sip) {
+            /* Objectives of this page: move files from sourceFiles to sourceFilesValidated, to do this we
+                - form an orderly queue
+                - run analyzeFile on each file, file taken from sourceFiles
+                - invoke the analysis WebApi method on the server
+                - hopefully the methods returns ok and we can put the file on sourceFilesValidated
+
+                New 2017
+                - if a file validates ok get transformation going straight away
+                    * the idea is this saves time, get transformation going while the user waits for the rest to be analysed (imagine eg four 3gb files)
+
+                New 2018
+                - old system of JS queue of files to be processed removed:
+                    * WebApi request to copy to server, when that done return a result and if ok that triggers call from browser to WebApi analyse, and so on
+
+                - new system
+                    * user clicks to copy a file or all files
+                    * copyfiletoserver WebApi method is called, creates a request to copy the file on the BackgroundQueue
+                    * progress is reported back using the GetBackgroundTaskSummary() WebApi method (was using this for transformation background queue)
+                    * need to check the result of the above method, map results to the files on this page so the user gets an updated UI
+
+            */
+            var self = this;
+
+            // from SIP vm
+            self.getSIPInProgress = ko.observable().subscribeTo("loading", true);
+            self.transformationActionInProgress = ko.observable(false); // stop users triggering multiple transformation debug actions at the same time
+
+            self.SamiFiles = ko.observableArray('@ViewBag.SamiFiles'.split('^^'));
+            self.AVFileTypes = @ViewBag.AVFileTypes;
+
+            self.getBackgroundFileTasksSummaryInProgress = ko.observable(false);
+            self.initialGetSIPFiles = ko.observable(false);
+            // self.sourceFiles = ko.observableArray();
+            // self.sourceFilesValidated = ko.observableArray();
+            // self.initialAnalysisInProgress = ko.observable(false).publishOn("savingData", true);
+            self.fileQueue = ko.observableArray([]);
+            self.filesProcessedOk = ko.observable(0);
+            self.filesProcessedFailed = ko.observable(0);
+            self.filesProcessedWarnings = ko.observable(0);
+
+            self.copyAwaiting = ko.observableArray([]);
+            self.copyRequested = ko.observableArray([]);
+            self.copyInProgress = ko.observableArray([]);
+            self.copyFailed = ko.observableArray([]);
+            self.isCopyFinished = ko.observable(false);
+
+            self.analysisRequested = ko.observableArray([]);
+            self.analysisInProgress = ko.observableArray([]);
+            self.analysisFailed = ko.observableArray([]);
+            self.isAnalysisFinished = ko.observable(false);
+
+            self.transformationAwaiting = ko.observableArray([]);
+            self.transformationInProgress = ko.observableArray([]);
+            self.transformationCompleted = ko.observableArray([]);
+            self.transformationFailed = ko.observableArray([]);
+            self.isTransformationFinished = ko.observable(false);
+
+            // self.requestTransformationImmediately = ko.observable(true);
+
+            self.forceCopyToServerFailure = ko.observable(false);
+            self.forceCopyToServerFailureChecksum = ko.observable(false);
+            self.forceAnalysisFailure = ko.observable(false);
+            self.automaticallyTransform = ko.observable(true);
+
+            // start: updates to/from PageNavVM
+            // user can't manually save data on this page, they can trigger an analysis of a file(s), but the result is auto saved
+            self.canSaveData = ko.observable(false).publishOn("canSaveData");
+            self.canMarkStepComplete = ko.computed(function () {
+                // if transcodes have not finished user can't mark step as complete
+                return self.isTransformationFinished();
+
+            }, self).extend({ rateLimit: 250 }).publishOn("canMarkStepComplete");
+
+            self.dataChanged = ko.observable(false).publishOn("dataChanged");
+            // end: updates from PageNavVM
+
+            //self.getSourceFileSuccess = function () {
+            //    // check if all of the files have been processed successfully allowing navigation to the next page.
+            //    //var step_pass= 0;
+            //    //var count_pass = 0;
+
+            //    if ((self.sourceFilesValidated().length == 0) &&  (self.sourceFiles().length == 0)) { // no files!
+            //        return -1;
+            //    }
+
+            //    if ((self.sourceFilesValidated().length >= 1) && (self.sourceFiles().length == 0)) {
+            //        // we have some files, and they must be validated as they are in our validated array  (and not in the unvalidated array)
+            //        // but have they also already all been transformed successfully
+            //        for (var i = 0; i < self.sourceFilesValidated().length; i++) {
+            //            var f = self.sourceFilesValidated()[i];
+
+            //            if (!f.AVTransformationMostRecentSuccessful || !f.AVTransformationMostRecentSuccessful.IsValid) {
+            //                return 0; // a File doesn't have a most recent successfully transformed file, or it does but it didn't validate (well then it wouldn't be most recent successful... so the IsValid check probably isn't needed but leaving it in anyway)
+            //            }
+            //        }
+            //        return 1; // all validated files have a most recent successfully transformation which is also valid
+            //    }
+            //    else {
+            //        return 0;  // no validated files
+            //    }
+            //}
+
+            self.fileWarnings = ko.pureComputed(function () {
+                return ((self.filesProcessedFailed() + self.filesProcessedWarnings()) > 0);
+            }, self);
+
+            self.filesProcessed = ko.pureComputed(function () {
+                return self.filesProcessedOk() + self.filesProcessedFailed();
+            }, self);
+
+            self.filesProcessedOKNoWarnings = ko.computed(function () {
+                if (self.filesProcessedOk() - self.filesProcessedWarnings() > 0)
+                {
+                    return self.filesProcessedOk() - self.filesProcessedWarnings();
+                }
+                return 0;
+            }, self);
+
+            self.filesCurrentTotal = ko.pureComputed(function () {
+                return self.filesProcessed() + self.fileQueue().length;
+            }, self);
+
+            self.filesRemaining = ko.pureComputed(function () {
+                return self.filesCurrentTotal() - self.filesProcessedOk() - self.filesProcessedFailed();
+            }, self);
+
+            self.filesProcessedOKPercentage = ko.computed(function () {
+                return (self.filesProcessedOk() / self.filesCurrentTotal()) * 100 + "%";
+            }, self);
+
+            self.filesProcessedOKNoWarningsPercentage = ko.computed(function () {
+
+                return ((self.filesProcessedOk() - self.filesProcessedWarnings()) / self.filesCurrentTotal()) * 100 + "%";
+            }, self);
+
+            self.filesProcessedFailedPercentage = ko.computed(function () {
+                return (self.filesProcessedFailed() / self.filesCurrentTotal()) * 100 + "%";
+            }, self);
+
+            self.filesProcessedWarningsPercentage = ko.computed(function () {
+                return (self.filesProcessedWarnings() / self.filesCurrentTotal()) * 100 + "%";
+            }, self);
+
+            self.copyFileInProgress = ko.observable(false);
+            self.analyzeFileInProgress = ko.observable(false);
+
+            self.processLog = ko.observableArray([]);
+
+            self.fileOperationInProgress = ko.pureComputed(function () {
+                return (self.copyRequested().length > 0 || self.copyInProgress().length > 0 || self.analysisRequested().length > 0 || self.analysisInProgress().length > 0);
+            }, self);
+
+
+            self.resetFileCounters = function () {
+                self.filesProcessedFailed(0);
+                self.filesProcessedWarnings(0);
+                self.filesProcessedOk(0);
+            }
+
+            self.getFileTestStatus = function(test_result) {
+                if (test_result == 1) {
+                    return 'Ok';
+                }
+                else if (test_result == 0) {
+                    return 'Fail';
+                }
+                else {
+                    return 'Unknown';
+                }
+            }
+
+            self.getJHOVETestStatus = function(passed, valid) {
+                if (valid) {
+                    return self.getFileTestStatus(valid);
+                }
+
+                if (passed)
+                    return 'n/a';
+
+                return self.getFileTestStatus(valid);
+            }
+
+            self.getCopyButtonIcon = function (data) {
+                var icon = '';
+                if (data.copied() && !data.failed() && (data.verified() == 1)) {
+                    icon = 'glyphicon glyphicon-ok';
+                }
+                else if (data.failed() || (data.verified() == 0)) {
+                    icon = 'glyphicon-question-sign';
+                }
+                else if (data.verified() != 1 && !data.failed() && data.copied()) {
+                    icon = 'glyphicon-warning-sign';
+                }
+                else if (!data.copied() && !data.failed()) {
+                    icon = 'glyphicon-copy';
+                }
+                else {
+                    icon = 'glyphicon-question-sign';
+                }
+                return 'glyphicon ' + icon;
+            }
+
+            self.copyFileClick = function (data, event) {
+                data.copyRequested("Requesting...");
+                self.copyFile(data.fileid, event);
+                return true;
+            }
+
+            self.copyAllFilesClick = function (data, event) {
+                // disable all the individual Copy file buttons, these would naturally disable but only after the queues have been setup and
+                // $('.btn-copy').prop('disabled', true).text('Requesting Copy, Please Wait');
+                self.copyFile(0, event);
+                return true;
+            }
+
+            self.copyFile = function (file_id, event) {
+                //$(event.currentTarget).prop('disabled', true).text('Requesting Copy, Please Wait')
+                $('.btn-copy').prop('disabled', true).text('Requesting Copy, Please Wait');
+
+                _sipVm.copyFileToServer(file_id, true, true, self.forceCopyToServerFailure(), self.forceCopyToServerFailureChecksum(), self.forceAnalysisFailure(), self.automaticallyTransform());
+                setTimeout(function () {
+                    self.getBackgroundFileTasksSummary();
+                }, 3000); // wait 5s to allow ajax calls to run, db to update, etc, then get summary so we can update the UI
+            }
+
+            //// files may already exist on the server if the user has returned to this SIP, try analysing so user knows file status (missing, ok, fail, etc)
+            //self.initialAnalysisClick = function (data, event) {
+            //    self.copyAllFiles();
+            //    return true;
+            //}
+
+            self.clearLogClick = function (data, event) {
+                self.processLog.removeAll();
+                return true;
+            }
+
+
+            self.verificationStatus = function (status) {
+                if (status == 1) {
+                    return 'Ok';
+                }
+                else if (status == 0) {
+                    return 'Failed!';
+                }
+                else if (status == -1) {
+                    return 'Not found';
+                }
+                else {
+                    return 'Unknown';
+                }
+            }
+
+
+            //self.processNextFileInQueue = function () {
+            //    if ((self.fileQueue().length > 0)) {
+            //        self.copyFile(self.fileQueue().pop());
+            //    }
+            //    else {
+            //        self.initialAnalysisInProgress(false);
+            //        _sipVm.updateSIPStepState(self.getSourceFileSuccess(), false);
+            //        self.dataChanged(false);
+            //        hideModal();
+            //    }
+            //}
+
+
+            self.getBackgroundFileTasksSummary = function (id) {
+                if (self.getBackgroundFileTasksSummaryInProgress()) {
+                    console.log('getBackgroundFileTasksSummary() skipped, already in progress');
+                    return;
+                }
+
+                var url = '@Url.Content("~/api/files/BackgroundFileTasksSummary/")' + _sipVm.sipId;
+                self.getBackgroundFileTasksSummaryInProgress(true);
+                
+                console.log('getBackgroundFileTasksSummary()');
+
+                $.ajax({
+                    method: 'GET',
+                    url: url,
+                    dataType: 'JSON',
+                    contentType: 'application/json'
+                })
+                .done(function (data) {
+                    // var avts = [];
+
+                    self.copyAwaiting(self.parseFiles(data.CopyAwaiting));
+                    self.copyRequested(self.parseFiles(data.CopyRequested));
+                    self.copyInProgress(self.parseFiles(data.CopyInProgress));
+                    self.copyFailed(self.parseFiles(data.CopyFailed));
+                    self.isCopyFinished(data.IsCopyFinished);
+
+                    self.analysisRequested(self.parseFiles(data.AnalysisRequested));
+                    self.analysisInProgress(self.parseFiles(data.AnalysisInProgress));
+                    self.analysisFailed(self.parseFiles(data.AnalysisFailed));
+                    self.isAnalysisFinished(data.IsAnalysisFinished);
+
+                    // for files undergoing transformation
+                    // convert properties to observables for binding to the checkboxes in the debug panel
+                    for (var i = 0; i < data.TransformationInProgress.length; i++) {
+                        var avt = data.TransformationInProgress[i];
+                        avt.ForceFailTransformationInitial4xx = ko.observable(avt.ForceFailTransformationInitial4xx);
+                        avt.ForceFailTransformationInitial5xx = ko.observable(avt.ForceFailTransformationInitial5xx);
+                        avt.ForceFailValidationChecksum = ko.observable(avt.ForceFailValidationChecksum);
+                        avt.ForceFailValidation = ko.observable(avt.ForceFailValidation);
+                    }
+
+                    // same as above but add in the properties as they don't exist in the object returned from the server
+                    self.addInFailureProperties(data.TransformationAwaiting, self.transformationAwaiting());
+                    self.addInFailureProperties(data.TransformationFailed, self.transformationFailed());
+
+                    // self.transformationInProgress(avts);
+
+                    self.transformationAwaiting(data.TransformationAwaiting);
+                    self.transformationInProgress(data.TransformationInProgress);
+
+                    // we can merge the transformation validations that are in progress in to the transformations in progress array
+                    // (we don't need the extra properties as we've passed the points in the transformation/validation process where they can be used)
+                    for (var j = 0; j < data.TransformationValidationInProgress.length; j++) {
+                        self.transformationInProgress.push(data.TransformationValidationInProgress[i]);
+                    }
+
+                    self.transformationCompleted(data.TransformationCompleted);
+                    self.transformationFailed(data.TransformationFailed);
+                    self.isTransformationFinished(data.IsTransformationFinished);
+
+                    // IMPORTANT to run this on initial file load, a user may have had a complete set of files, had them pass analysis,
+                    // then added a new one, so we need to reset the Step Status to -1 or 0 (not 1)
+                    // So: if the step state is 1 (pass) or the step is marked as complete we need to invalidate it to force user to analyze again
+                    // var files_ok = self.getSourceFileSuccess();
+
+                    if ((!self.isTransformationFinished()) && ((_sipVm.currentStepState().Status == 1) || (_sipVm.currentStepStateComplete()))) {
+                        _sipVm.updateSIPStepState(0, false);
+                    }
+                    else if (self.isTransformationFinished()) {
+                        if (_sipVm.currentStepState().Status != 1) {
+                            // update the StepState, but don't auto set the step as complete, so user must confirm
+                            _sipVm.currentStepState().Messge = 'Analysis, validation and transformation all finished';
+                            _sipVm.updateSIPStepState(1, false);
+                            self.dataChanged(false);
+                        }
+                    }
+
+                    self.afterRenderTransformationsInProgress();
+                })
+                .fail(function (data) {
+                    var error_code = 0;
+                    if (data) {
+                        error_code = data.status;
+                    }
+
+                    ko.postbox.publish("modalChanged", { message: 'Error getting transformation summary: ' + error_code });
+                })
+                .always(function () {
+                    self.getBackgroundFileTasksSummaryInProgress(false);
+
+                    setTimeout(function () {
+                        self.getBackgroundFileTasksSummary();
+                    }, 45000); //45s interval to check what's going on with the transformations
+                });
+            }
+
+            self.addInFailureProperties = function (new_tf_array, existing_tf_array) {
+                // this is so failure pathways can be tested, add in some properties that we can look for downstream
+                // in the transformation progress, and trigger fake failures
+                for (var i = 0; i < new_tf_array.length; i++) {
+                    var fat = new_tf_array[i];
+
+                    var ffti4xx = false;
+                    var ffti5xx = false;
+                    var ffvc = false;
+                    var ffv = false;
+
+                    // so we don't overwrite any custom settings on auto refresh if the user has set them
+                    for (var j = 0; j < existing_tf_array.length; j++) {
+                        var fat_existing = existing_tf_array[j];
+                        if (fat_existing.FileId == fat.FileId) {
+                            ffti4xx = fat_existing.ForceFailTransformationInitial4xx();
+                            ffti5xx = fat_existing.ForceFailTransformationInitial5xx();
+                            ffvc = fat_existing.ForceFailValidationChecksum();
+                            ffv = fat_existing.ForceFailValidation();
+                            break;
+                        }
+                    }
+
+                    fat.ForceFailTransformationInitial4xx = ko.observable(ffti4xx);
+                    fat.ForceFailTransformationInitial5xx = ko.observable(ffti5xx);
+                    fat.ForceFailValidationChecksum = ko.observable(ffvc);
+                    fat.ForceFailValidation = ko.observable(ffv);
+                }
+            }
+
+            self.parseFiles = function (files) {
+                var parsed_files = [];
+
+                for (var i = 0; i < files.length; i++) {
+                    parsed_files.push(self.parseFileData(files[i]));
+                }
+                return parsed_files;
+            }
+
+            self.parseFileData = function (f) {
+                // just make some properties observables for easy binding to the UI
+                var file = {
+                    AVTransformationMostRecentSuccessful: f.AVTransformationMostRecentSuccessful,
+                    fileid: f.FileId,
+                    sourcePath: f.SourcePath,
+                    fileName: f.Name,
+                    // destPath: ko.observable(f.SourcePath),
+                    size: ko.observable(f.Size),
+                    sizeHuman: ko.observable(_humanFileSize(f.Size)),
+                    copyRequested: ko.observable(f.CopyRequested),
+                    copyStarted: ko.observable(f.CopyStarted),
+                    copyCompleted: ko.observable(f.CopyCompleted),
+                    copyFailed: ko.observable(f.CopyFailed),
+                    copyWaitTime: ko.observable(f.CopyWaitTime),
+                    copyTimeTaken: ko.observable(f.CopyTimeTaken),
+                    analysisRequested: ko.observable(f.AnalysisRequested),
+                    analysisStarted: ko.observable(f.AnalysisStarted),
+                    analysisCompleted: ko.observable(f.AnalysisCompleted),
+                    analysisFailed: ko.observable(f.AnalysisFailed),
+                    analysisWaitTime: ko.observable(f.AnalysisWaitTime),
+                    analysisTimeTaken: ko.observable(f.AnalysisTimeTaken),
+                    result: ko.observable(f.Result),
+                    copied: ko.observable(f.Copied),
+                    locked: ko.observable(f.HoldDir),
+                    verified: ko.observable(f.Verified),
+                    duration: ko.observable(f.Duration),
+                    vBitRate: ko.observable(),
+                    vColorModel: ko.observable(),
+                    vFormat: ko.observable(),
+                    vFps: ko.observable(),
+                    aBitRate: ko.observable(),
+                    aChannelOutput: ko.observable(),
+                    aFormat: ko.observable(),
+                    aSampleRate: ko.observable(),
+                    failed: ko.observable(!f.IsValid),
+                    avTransformations: ko.observableArray(f.AVTransformations),
+                    isMediaInfoValid: ko.observable(f.IsMediaInfoValid),
+                    isDROIDValid: ko.observable(f.IsDROIDValid),
+                    isJHOVEValid: ko.observable(f.IsJHOVEValid),
+                    isJHOVETestPassed: ko.observable(f.IsJHOVETestPassed),
+                    validationError: ko.observable(f.ValidationError)
+                };
+
+                
+                if (f.VideoData != null) {
+                    file.vBitRate(f.VideoData.BitRate);
+                    file.vColorModel(f.VideoData.ColorModel);
+                    file.vFormat(f.VideoData.Format);
+                    file.vFps(f.VideoData.Fps);
+                }
+
+                if (f.AudioData != null) {
+                    file.aBitRate(f.AudioData.BitRate);
+                    file.aChannelOutput(f.AudioData.ChannelOutput);
+                    file.aFormat(f.AudioData.Format);
+                    file.aSampleRate(f.AudioData.SampleRate);
+                }
+
+
+                return file;
+            }
+
+
+            self.showCopyButton = function (data, event) {
+                // if successfully copied and passed analysis we don't need a copy button
+                if (data.copied() && !data.failed())
+                    return false;
+
+                // handle failed analysis first, we need a copy button so the user can retry
+                if (data.copyFailed() != null || data.analysisFailed() != null)
+                    return true;
+
+                return (data.copyRequested() == null);
+            }
+
+
+            self.showTransformationButton = function (data, event) {
+                // if successfully transformed, or transformation in progress we don't need a transform button
+                if (data.AVTransformationMostRecentSuccessful)
+                    return false;
+
+                if ((data.analysisCompleted() != null && data.analysisFailed() == null) || !data.failed())
+                    return true;
+
+                return false;
+            }
+
+
+            self.requestTransformationClick = function (data, event) {
+                $(event.currentTarget).prop("disabled",true);
+                _sipVm.requestFileTransformation(data.FileId, data.ForceFailTransformationInitial4xx(), data.ForceFailTransformationInitial5xx(), data.ForceFailValidationChecksum(), data.ForceFailValidation());
+            }
+
+
+            self.onFileTransformationRequested = function (tfresult) {
+                // we don't actually need to do anything here as the list of files which are transformation in progress auto refreshes itself
+                // alert("tf requested, file id: " + tfresult.fileId + ', response code: ' + tfresult.errorCode);
+            }
+            self.transformed = ko.observable().subscribeTo("fileTransformationRequested", self.onFileTransformationRequested);
+
+            self.updateTransformationFailFlags = function (root, data, parent) {
+                _sipVm.updateTransformationFailFlags(data.AVTransformationId, data.ForceFailTransformationInitial4xx(), data.ForceFailTransformationInitial5xx(), data.ForceFailValidationChecksum(), data.ForceFailValidation());
+            }
+
+            @*self.saveFileAnalysis = function (file) {
+
+            $.ajax({
+                method: 'PATCH',
+                url: '@Url.Content("~/api/files/analysis/")',
+                dataType: 'JSON',
+                contentType: 'application/json',
+                data: JSON.stringify(ko.toJS(file))
+            })
+            .done(function (data) {
+
+            })
+            .fail(function (data) {
+                alert('Error saving analysis for file: ' + file);
+            })
+            .always(function () {
+
+            });
+        }*@
+
+            function escapeRegExp(string) {
+                return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+            }
+
+            function replaceAll(string, find, replace) {
+                return string.replace(new RegExp(escapeRegExp(find), 'g'), replace);
+            }
+
+            @*self.nextClick = function () {
+            var go_next = true;
+            var warning = false;
+
+            for (var i = 0; i < self.sourceFiles().length; i++) {
+                var file = self.sourceFiles()[i];
+                if (file.copied() && file.result()
+                    && file.result() == "Ok" && !file.failed()
+                    && file.verified() && file.verified() == 1) {
+                    warning = false;
+                }
+                else {
+                    warning = true;
+                    break;
+                }
+            }
+
+            //this only checks the last copy file operation, be it a single file, all or resume.
+            //if (self.fileWarnings()) {
+            //    go_next = confirm("Warning: There are some issues with the files, proceed?");
+            //}
+
+            if (warning) {
+                //go_next = confirm("Warning: There are some issues with the files, proceed?");
+                go_next = false;
+                $('#warningModal').modal('show');
+            }
+
+            if (go_next) {
+                self.goNextPage();
+            }
+        }
+
+        self.goNextPage = function () {
+            window.location.href = '@Url.Content("~/Files/Process/")' + _sipVm.sipId;
+        }*@
+
+            function addEventToProcessLog(type, message) {
+                var process_event = { type: type, message: message }
+                self.processLog.push(process_event);
+            }
+
+            self.displayProcessLogMode = function (process_event) {
+                return (process_event) ? process_event.type : 'event-unknown';
+            }
+
+
+            // only allow the user trigger transformation debug actions if none are already running and the SIP hasn't loaded yet
+            self.transformationActionAllowed = ko.computed(function () {
+                return ((self.transformationActionInProgress() == false) && (self.getSIPInProgress() == false));
+            }, self);
+
+            // event handlers
+
+            // debug functions which allow a user to simulate a transformation callback success or failure
+            // (if there exists an AVTransformation in a state which is awaiting a callback (transformation in progress)
+            // if this doesn't happen the transformations in progress will most likely timeout eventually
+            // depending on timeout value set in web.config for transformations. pSIP will be locked from editing while
+            // transformations are in progress
+            var _waitMsg = 'This will take about a minute, please wait until this page has automatically refreshed before navigating away from this page or clicking any other buttons.';
+
+            self.transformationSuccessClick = function (data) {
+                if (self.transformationActionAllowed()) {
+                    ko.postbox.publish("modalChanged", { message: 'Are you sure you wish to simulate a successful callback for this transformation? ' + _waitMsg, yesHandler: function () { self.transformationAction(data.AVTransformationId, true); } });
+                }
+            }
+
+            self.transformationFailClick = function (data) {
+                if (self.transformationActionAllowed()) {
+                    ko.postbox.publish("modalChanged", { message: 'Are you sure you wish to simulate a failure callback for this transformation? ' + _waitMsg, yesHandler: function () { self.transformationAction(data.AVTransformationId, false); } });
+                }
+            }
+
+            self.transformationAction = function (avt_id, success) {
+                if (self.transformationActionInProgress()) {
+                    ko.postbox.publish("modalChanged", { message: 'Another transformation action is already in progress, please wait until it has completed, please try again in a few moments.' });
+                    return;
+                }
+                // api/Files/SimulateTransformationCallback/{avt_id:int}/{success:bool}/{user_id}")]
+                var url = '@Url.Content("~/api/Files/")' + 'SimulateTransformationCallback/' + avt_id + '/' + success + '/' + _sipVm.userId;
+                self.transformationActionInProgress(true);
+                var error = null;
+
+                $.ajax({
+                    method: 'GET',
+                    url: url,
+                    // dataType: 'JSON',
+                    contentType: 'application/json'
+                })
+                .done(function (data) {
+                    if (data.toLowerCase() != 'ok') {
+                        error = data;
+                    } else {
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 25000);
+                    }
+                })
+                .fail(function (data) {
+                    error = 'Unable to simulate transformation callback result: ';
+
+                    if ((data.responseJSON) && (data.responseJSON.Message)) {
+                        error = error + data.responseJSON.Message;
+                    } else {
+                        error = error + 'unknown error';
+                    }
+                    self.transformationActionInProgress(false);
+                })
+                .always(function () {
+                    if (error) {
+                        setTimeout(function () {
+                            ko.postbox.publish("modalChanged", { message: error });
+                        }, 2000);
+                    }
+                });
+            }
+            // end event handlers
+
+
+            self.getStateIcon = function (is_ok, is_warning, is_fail, is_awaiting) {
+                var fail = 'sip-alert glyphicon glyphicon-remove-circle';
+                var warn = 'sip-warning glyphicon glyphicon-warning-sign';
+                var ok = 'sip-ok glyphicon glyphicon-ok-circle';
+                var await = 'glyphicon glyphicon-cog glyphicon-spin';
+
+                if (is_fail) {
+                    return fail;
+                }
+                else if (is_warning) {
+                    return warn; 
+                }
+                else if (is_ok) {
+                    return ok;
+                }
+                else if (is_awaiting) {
+                    return await;
+                }
+                return warn;
+            }
+
+            self.getStepStateBackground = function (is_ok, is_warning, is_fail) {
+                if (is_fail) {
+                    return 'sip-alert';
+                }
+                else if (is_warning) {
+                    return 'sip-warning';
+                }
+                else if (is_ok) {
+                    return 'sip-ok';
+                }
+
+                return 'sip-warning';
+            }
+
+            self.calculateFilePanelHeight = function (file_count, row_height, row_space, extra) {
+                if (!extra) {
+                    extra = 0;
+                }
+                return ((file_count * row_height) + (Math.max(0, file_count - 1) * row_space) + 15) + extra; // box height plus buttom margins plus 15px bottom space
+            }
+
+            self.afterRenderTransformationsInProgress = function(elements, data_item) {
+                var f = self.transformationInProgress().length;
+                var ph = self.calculateFilePanelHeight(f, 25, 10);
+                $('#transformation-inprogress-files-collapse').css('cssText', 'height:' + f*ph + 'px !important;'); 
+                $('#transformation-inprogress-files-collapse-items').css('cssText', 'height:' + f*ph + 'px !important;');
+                $('#transformation-inprogress-files-collapse-items').children('.file-item').css('cssText', 'height:' + ph + 'px !important;');
+            }
+        }
+
+        var _sipVm, _navVm, _poVM, _pageVm;
+        _sipVm = new SIPViewModel('@Url.Content("~/")', '@ViewBag.SipId', '@ViewBag.StepStateId', '@ViewBag.UserId');
+        ko.applyBindings(_sipVm, document.getElementById('sip-header'));
+
+        window.onload = function () {
+            _sipVm.getSIP(setupPage);
+        };
+
+        function setupPage() {
+            _navVm = new PageNavigationViewModel();
+            $(".page-nav").each(function () {
+                ko.applyBindings(_navVm, this);
+            });
+
+            _poVM = new ProcessOverviewViewModel(_sipVm.urlRoot);
+            ko.applyBindings(_poVM, document.getElementById('process-overview'));
+
+            _pageVm = new AnalyzeFilesViewModel(_sipVm.sip());
+            ko.applyBindings(_pageVm, document.getElementById('analyze-files'));
+
+            //_pageVm.getSIPFiles(_sipVm.sipId);
+            _pageVm.getBackgroundFileTasksSummary();
+
+            _setupPopOvers();
+
+            $('#transformation-inprogress-files-collapse').on('shown.bs.collapse', function () {
+                _pageVm.afterRenderTransformationsInProgress();
+            })
+
+        }
+
+
+        //function showModal() {
+        //    $('#logModal').modal({backdrop: 'static', keyboard: false}).modal('show');
+        //}
+
+        //function hideModal() {
+        //    $('#logModal').modal('hide');
+        //}
+
+    </script>

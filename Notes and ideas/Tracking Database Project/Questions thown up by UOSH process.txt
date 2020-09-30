@@ -1,0 +1,6 @@
+pSIP might have multiple callnumber/shelfmarks how to adjust the records for each item? From filename perhaps?
+
+
+Simple workflow no surrogates:
+
+1 item --->orignal transfer--->2 files created on same day---> 

@@ -1,0 +1,120 @@
+Downloaded the Adventure works database as a test to learn syntax and setup development enviroment.
+https://github.com/Microsoft/sql-server-samples/releases/tag/adventureworks
+https://github.com/microsoft/sql-server-samples/tree/master/samples/databases/adventure-works
+
+
+
+Conect to SQl Express instance via .\SQLEXPRESS in the Microstimfo SSQL Server management studio.
+
+
+https://stackoverflow.com/questions/59687910/pyodbc-importerror-dll-load-failed-the-specified-module-could-not-be-found
+
+https://support.microsoft.com/en-ca/help/2977003/the-latest-supported-visual-c-downloads
+
+The above cause a need to downgrade SQl Server to 2017 version.
+
+
+
+import pyodbc 
+conn = pyodbc.connect('Driver={SQL Server};'
+                      'Server=server_name;'
+                      'Database=db_name;'
+                      'Trusted_Connection=yes;')
+
+cursor = conn.cursor()
+cursor.execute('SELECT * FROM db_name.Table')
+// This syntax works SELECT * FROM [dbo].[Lkup_Format]
+
+for row in cursor:
+    print(row)
+
+https://www.datacamp.com/community/blog/sql-differences
+
+
+There is no DESCRIBE keyword in MS SQL so:
+https://stackoverflow.com/questions/11078106/how-to-describe-table-in-sql-server-2008/11082116#11082116
+
+How to do SQl queries on a database that uses a lookup table??
+????
+
+
+NOTE PYobdc doesn't suport named parameters everything has to be a positional '?'
+https://stackoverflow.com/questions/32748982/does-pyodbc-support-any-form-of-named-parameters
+which is a shame as this is nice:
+cursor.execute('SELECT * FROM dbo.Main WHERE Shelfmark=:SIPshelfmark', {'SIPshelfmark': sipJSON['SamiCallNumber']})
+
+What to get from the pSIP
+Transfer date - for which file though? Groups?
+
+PSIP Creation date - This is a constant, regardless of whether surrogates are used.
+
+PSIP Engineer - [StepStates][0]['CreateByUsername']
+
+pSIP_Date = sipJSON['StepStates'][0]['Created']
+
+speed{310} = 
+
+sipJSON['Files']['Name'] is the filename. Need to test whether it's a list or not for pSIPs with multiple files in them 
+(suspect not)
+
+
+
+Transfer Date = to the created date of the wav file for that particular shelfmark.
+using the test files BL_C1608-4_s1_f01_v1 - Copy. Created on the 7th of February 2020
+
+N.B That isn't unusual with copied files, when you copy a file the file's created date becomes 
+the modified date and the current date (when the file is copied) becomes the created date, copy any existing file on your computer and you will observe this behaviour.
+
+JSONPath !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+https://fabianlee.org/2019/03/10/python-querying-json-files-with-jsonpath-using-jsonpath_rw_ext/
+
+ConfigPasuer
+https://pymotw.com/3/configparser/
+
+PYOBDC wraps error messages from the underlying PYDB module and uses SQLSTATE codes. An example of an PYOBDC exception is:
+Exception has occurred: ProgrammingError
+('42000', '[42000] [Microsoft][ODBC SQL Server Driver][SQL Server]Cannot open database "UOSH_TrackingDiB" requested by the login. The login failed. (4060) (SQLDriverConnect); [42000] [Microsoft][ODBC SQL Server Driver][SQL Server]Cannot open database "UOSH_TrackingDiB" requested by the login. The login failed. (4060)')
+  File "C:\Users\chris\Desktop\Tracking Database Project\SQL Server Connection Test.py", line 205, in <module>
+    connection = pyodbc.connect(LOCAL_TEST_DB)
+
+https://docs.microsoft.com/en-us/sql/relational-databases/native-client-odbc-error-messages/sqlstate-odbc-error-codes?view=sql-server-ver15
+
+Can the SQl command "UPDATE" be used for blank fields?
+What errors are thrown up if you attempt to UPDATE a record that doesn't exist?
+
+https://www.python-course.eu/sql_python.php
+
+Convert dates from strings to datetime objects
+
+PEP8 and line length for SQl queries
+
+def date_tally(filenames):
+    """Strips modified date from list of file information strings and returns the most common date as a datetime object"""
+    
+    list_of_dates = []
+    for file in filenames:
+        filedate = datetime.datetime.strptime((file.partition("Modified: ")[2]), "%a, %d %b %Y %H:%M:%S %Z")
+        list_of_dates.append(filedate.date())
+    tally_dates = [[x, list_of_dates.count(x)] for x in set(list_of_dates)]
+    tally_dates = sorted(tally_dates, key = lambda date: date[1])
+    return tally_dates[-1][0]
+
+>>> date_tally
+<function date_tally at 0x000001A545A87730>
+>>> Track_Config = [2, 2, 2, 1]
+>>> list(set(Track_Config))
+[1, 2]
+>>> if len(list(set(Track_Config))) > 1: print("mono / stereo")
+
+mono / stereo
+>>> 
+
+https://note.nkmk.me/en/python-long-string/
+
+******This SIP caused an error with the dates**********
+'C731/59'
+This was an issue in programming. A variable assignmnent was happening before the variable was declared.
+
+******
+How to maintain line breaks in VARCHAR inserts?
+This is handled by passing a \n excape code from Python. SSMS needs to return the query results as 'text' as opposed to the default grid view.

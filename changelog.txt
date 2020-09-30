@@ -4,3 +4,7 @@ v1.2 - Replaced WebDriver click() method with driver.execute_script("arguments[0
 
 Last update February 7th 2020
 File hash (checksum) failure is recorded in the log file.
+
+Sept 17th
+Fixed bug where date of the refernce sip wasn't be added to the new process metadata.
+Will check spreadsheet to make sure reference SIP ID is correct. The title of the refernce SIp will be printed in the log.

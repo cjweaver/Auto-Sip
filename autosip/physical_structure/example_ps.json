@@ -1,0 +1,58 @@
+{"Id":63563,"PhysicalStructure":"[{
+    \"_MDARK\": null,
+    \"_deleted\": null,
+    \"nodeId\": 0,
+    \"text\": \"1LP0000002, And A Time To Dance, 1984\",
+    \"type\": \"node\",
+    \"desc\": \"PhysicalResource\",
+    \"invalid\": null,
+    \"rights\": \"UNASSIGNED^^Unassigned Copyright Status\",
+    \"rightsHolder\": \"The British Library\",
+    \"_deletedNodes\": [],
+    \"_deletedRanges\": [],
+    \"children\": [
+        {
+            \"_MDARK\": null,
+            \"_deleted\": null,
+            \"nodeId\": 1,
+            \"text\": \"\",
+            \"type\": \"node\",
+            \"desc\": \"tape\",
+            \"invalid\": null,
+            \"rights\": null,
+            \"children\": [],
+            \"recordingSurfaces\": [
+                {
+                    \"_MDARK\": null,
+                    \"_deleted\": null,
+                    \"nodeId\": 2,
+                    \"text\": \"\",
+                    \"type\": \"recording-surface\",
+                    \"desc\": \"Side\",
+                    \"invalid\": null,
+                    \"rights\": null,
+                    \"children\": null,
+                    \"recordingSurfaces\": null,
+                    \"files\": [
+                        {
+                            \"nodeId\": 3,
+                            \"type\": \"file\",
+                            \"desc\": \"File\",
+                            \"text\": \"CW_TEST.wav 00:00:14.266\",
+                            \"fileId\": 251183,
+                            \"fId\": \"file001\",
+                            \"ranges\": [],
+                            \"invalid\": null
+                        }
+                    ]
+                }
+            ],
+            \"files\": []
+        }
+    ],
+    \"recordingSurfaces\": null,
+    \"files\": null,
+    \"counterRange\": 0,
+    \"counterFile\": 1,
+    \"counterNode\": 3
+}]"}

@@ -1,0 +1,181 @@
+{
+    "_MDARK": null,
+    "_deleted": null,
+    "nodeId": 0,
+    "text": "C8/1, Song (1977-03-04)",
+    "type": "node",
+    "desc": "PhysicalResource",
+    "invalid": null,
+    "rights": "UNASSIGNED^^Unassigned Copyright Status",
+    "rightsHolder": "The British Library",
+    "_deletedNodes": [],
+    "_deletedRanges": [],
+    "children": [
+        {
+            "_MDARK": null,
+            "_deleted": null,
+            "nodeId": 1,
+            "text": "",
+            "type": "node",
+            "desc": "Tape",
+            "invalid": null,
+            "rights": null,
+            "children": [],
+            "recordingSurfaces": [
+                {
+                    "_MDARK": null,
+                    "_deleted": null,
+                    "nodeId": 2,
+                    "text": "",
+                    "type": "recording-surface",
+                    "desc": "Side",
+                    "invalid": null,
+                    "rights": null,
+                    "children": null,
+                    "recordingSurfaces": null,
+                    "files": [
+                        {
+                            "nodeId": 3,
+                            "type": "file",
+                            "desc": "File",
+                            "text": "BL_C8-1_s1_f01_v1.wav 00:00:14.266",
+                            "fileId": 252292,
+                            "fId": "file001",
+                            "ranges": [],
+                            "invalid": null
+                        },
+                        {
+                            "nodeId": 6,
+                            "type": "file",
+                            "desc": "File",
+                            "text": "BL_C8-1_s1_f02_v1.wav 00:00:06.981",
+                            "fileId": 252293,
+                            "fId": "file002",
+                            "ranges": [],
+                            "invalid": null
+                        },
+                        {
+                            "nodeId": 7,
+                            "type": "file",
+                            "desc": "File",
+                            "text": "BL_C8-1_s1_f03_v1.wav 00:00:06.981",
+                            "fileId": 252294,
+                            "fId": "file003",
+                            "ranges": [],
+                            "invalid": null
+                        }
+                    ]
+                },
+                {
+                    "_MDARK": null,
+                    "_deleted": null,
+                    "nodeId": 12,
+                    "text": "",
+                    "type": "recording-surface",
+                    "desc": "Side",
+                    "invalid": null,
+                    "rights": null,
+                    "children": null,
+                    "recordingSurfaces": null,
+                    "files": [
+                        {
+                            "nodeId": 13,
+                            "type": "file",
+                            "desc": "File",
+                            "text": "BL_C8-1_s2_f01_v1.wav 00:00:08.116",
+                            "fileId": 252295,
+                            "fId": "file006",
+                            "ranges": [],
+                            "invalid": null
+                        }
+                    ]
+                }
+            ],
+            "files": []
+        },
+        {
+            "_MDARK": null,
+            "_deleted": null,
+            "nodeId": 4,
+            "text": "",
+            "type": "node",
+            "desc": "Tape",
+            "invalid": null,
+            "rights": null,
+            "children": [],
+            "recordingSurfaces": [
+                {
+                    "_MDARK": null,
+                    "_deleted": null,
+                    "nodeId": 8,
+                    "text": "",
+                    "type": "recording-surface",
+                    "desc": "Side",
+                    "invalid": null,
+                    "rights": null,
+                    "children": null,
+                    "recordingSurfaces": null,
+                    "files": [
+                        {
+                            "nodeId": 9,
+                            "type": "file",
+                            "desc": "File",
+                            "text": "BL_C8-2_s1_f01_v1.wav 00:00:06.981",
+                            "fileId": 252296,
+                            "fId": "file004",
+                            "ranges": [],
+                            "invalid": null
+                        }
+                    ]
+                }
+            ],
+            "files": null
+        },
+        {
+            "_MDARK": null,
+            "_deleted": null,
+            "nodeId": 5,
+            "text": "",
+            "type": "node",
+            "desc": "Tape",
+            "invalid": null,
+            "rights": null,
+            "children": [],
+            "recordingSurfaces": [
+                {
+                    "_MDARK": null,
+                    "_deleted": null,
+                    "nodeId": 10,
+                    "text": "",
+                    "type": "recording-surface",
+                    "desc": "Side",
+                    "invalid": null,
+                    "rights": null,
+                    "children": null,
+                    "recordingSurfaces": null,
+                    "files": [
+                        {
+                            "nodeId": 11,
+                            "type": "file",
+                            "desc": "File",
+                            "text": "BL_C8-3_s1_f01_v1.wav 00:00:06.981",
+                            "fileId": 252297,
+                            "fId": "file005",
+                            "ranges": [],
+                            "invalid": null
+                        }
+                    ]
+                }
+            ],
+            "files": null
+        }
+    ],
+    "recordingSurfaces": null,
+    "files": null,
+    "counterRange": 0,
+    "counterFile": 6,
+    "counterNode": 13
+}
+
+
+

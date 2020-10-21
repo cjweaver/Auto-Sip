@@ -537,12 +537,14 @@ def physical_structure(physical_structure_url, sip_id, item_format):
     SAMI_XML = sami_lookup.get_SAMI_xml(titleID)
     shelfmark_order = sami_lookup.shelfmark_order(SAMI_XML)
     
-    if sami_lookup.multiple_callnumbers(SAMI_XML):
-        structure_failsafe = True
-    else:
-        structure_failsafe = False
-        sip_physical_structure = ps.physical_items_from(files_json, sip_id, item_format, sip_text, shelfmark_order)
-        ps.patch_physical_structure(sip_id, sip_physical_structure, physical_step_state_id, user_id)
+    # if sami_lookup.multiple_callnumbers(SAMI_XML):
+    structure_failsafe = False
+    # Need to check for item field in files and fallback to structure failsafe if True
+    #
+    # else:
+    #     structure_failsafe = False
+    sip_physical_structure = ps.physical_items_from(files_json, sip_id, item_format, sip_text, shelfmark_order)
+    ps.patch_physical_structure(sip_id, sip_physical_structure, physical_step_state_id, user_id)
       
     # Haven't arrived via clicking "Continue" from last step
     # so...

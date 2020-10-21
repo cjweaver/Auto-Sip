@@ -29,12 +29,25 @@ def multiple_callnumbers(SAMI_XML):
         return True
     return False   
 
+
 def shelfmark_order(SAMI_XML):
     root = ET.fromstring(SAMI_XML)
     return [shelfmark.text for shelfmark in root.findall("default:TitleInfo/default:BibliographicInfo/default:MarcEntryInfo/[default:entryID='087']/default:text", ns)]
 
-# titleID = get_title_id(44618)
-titleID = 4015467
+
+def contains_subshelfmarks(shelfmark_order):
+
+    sub_shelfmarks = False
+
+    for shelfmark in shelfmark_order:
+        if len(shelfmark.split("-")) > 1:
+            sub_shelfmarks = True
+    return sub_shelfmarks
+
+
+
+titleID = get_title_id(66908)
+# titleID = 4015467
 SAMI_XML = get_SAMI_xml(titleID)
 print(multiple_callnumbers(SAMI_XML))
 print(shelfmark_order(SAMI_XML))

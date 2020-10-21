@@ -1,8 +1,8 @@
 # Live SIP Tool Website
-site="https://avsip.ad.bl.uk"
+# site="https://avsip.ad.bl.uk"
 
 # DEV SIP Tool Website 
-# site="https://v12l-avsip.ad.bl.uk:8450"
+site="https://v12l-avsip.ad.bl.uk:8450"
 
 
 # SOS_HLF Drive

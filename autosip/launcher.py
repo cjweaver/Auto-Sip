@@ -11,6 +11,7 @@ import time
 import warnings
 from xml.etree import ElementTree
 
+from colorama import Fore, Back, Style, init
 import openpyxl
 import requests
 import urllib3
@@ -62,6 +63,8 @@ console.setFormatter(formatter)
 logging.getLogger('').addHandler(console)
 
 
+# Reset Colorama 
+init(autoreset=True)
 
 
 
@@ -149,10 +152,6 @@ def createNewsip(shelfmark, grouping="None"):
     if "Found 0 results... Please try again" in driver.find_element_by_xpath('//*[@id="main-content"]/div[2]/div[1]/h4[2]/span').text:
         raise ValueError(f"Found no SAMI results with {shelfmark}. Try with zero padded shelfmark???") 
        
-    
-    
-    
-    
     # Wait until the 1st result is found before continuing
     driver.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "list-group-item")))
     # Select 1st found result
@@ -203,7 +202,9 @@ def createNewsip(shelfmark, grouping="None"):
             modal = driver.wait.until(EC.presence_of_element_located((By.XPATH, "//*[@class='modal-open']")))
             if "has already been associated" in modal.get_attribute('textContent'):
                 creator = re.findall(r'by\s[a-zA-Z\.]+', modal.get_attribute('textContent'))[0]
-                raise Exception(f"The SIP has already been created {creator}.")
+                raise Exception(f"The pSIP has already been created {creator}.")
+            elif "already has an L-ARK in field 975, do you want to proceed?" in modal.get_attribute('textContent'):
+                raise Exception(f"The selected SAMI record {sami_item_text} already has an L-ARK")
     
 
     sip_continue = driver.wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[3]/div[2]/nav/button[3]")))
@@ -538,13 +539,17 @@ def physical_structure(physical_structure_url, sip_id, item_format):
     shelfmark_order = sami_lookup.shelfmark_order(SAMI_XML)
     
     # if sami_lookup.multiple_callnumbers(SAMI_XML):
-    structure_failsafe = False
     # Need to check for item field in files and fallback to structure failsafe if True
     #
     # else:
     #     structure_failsafe = False
-    sip_physical_structure = ps.physical_items_from(files_json, sip_id, item_format, sip_text, shelfmark_order)
-    ps.patch_physical_structure(sip_id, sip_physical_structure, physical_step_state_id, user_id)
+
+    try:
+        sip_physical_structure = ps.physical_items_from(files_json, sip_id, item_format, sip_text, shelfmark_order)
+        ps.patch_physical_structure(sip_id, sip_physical_structure, physical_step_state_id, user_id)
+        structure_failsafe = False
+    except KeyError:
+        structure_failsafe = True
       
     # Haven't arrived via clicking "Continue" from last step
     # so...
@@ -554,11 +559,11 @@ def physical_structure(physical_structure_url, sip_id, item_format):
     #  Wait for the format type drop down to appear as an indication the page has finished loading.
     driver.wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="demo1"]/div/div[1]/div[1]/select')))
 
+    # The failsafe physical structure will simply add all the files to the first object like a CD.
+    # Allowing the pSIP to be continued to be constructed.
+    # Users will have to correct that page once the pSIP(s) are complete.
     if structure_failsafe:
         s1 = ui.Select(driver.wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="demo1"]/div/div[1]/div[1]/select'))))
-        # s1 = ui.Select(driver.find_element_by_xpath('//*[@id="demo1"]/div/div[1]/div[1]/select'))
-        # select disc from the dropdown
-        # The physical structure is curently hardcoded for CDRs only. Need to read the format from the XL sheet.
         print(f"\nPhysical structure: {item_format}")
         s1.select_by_visible_text(item_format)
         #s1.select_by_index(2)
@@ -580,7 +585,7 @@ def physical_structure(physical_structure_url, sip_id, item_format):
     
     time.sleep(1)
 
-    # Mark as step complete but don't click continue to avoid next page modal
+    # Mark as step complete but don't click continue to avoid next page modal popup hanging the script
     driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))))
 
     print("Complete.")
@@ -606,7 +611,7 @@ def get_cd_log(shelfmark, log_directory):
             logger.info(f"Cannot locate CD log {error}")
 
 def end_prog():
-    print("Press any key to end the program.")
+    print(Back.RED + "Press any key to end the program.")
 
     while(True):
         if msvcrt.kbhit():
@@ -717,7 +722,7 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
         dest_step_id,
         dest_user_id
     )
-    print('patching', patch_url)
+    # print('patching', patch_url)
     r = requests.patch(
         patch_url,
         json=dest_process_metadata,
@@ -785,7 +790,7 @@ def getSIPStobuild():
     
     
     print(f"\nReading the SIPS.xlsx spreadsheet from {desktop}")
-    warnings.simplefilter("default")
+    # warnings.simplefilter("default")
     
     ws = wb.active
     rows = ws.rows
@@ -807,8 +812,8 @@ def getSIPStobuild():
             raise AttributeError(f'Missing a required value(s) from row {directory.row} in the SIPS spreadsheet')
 
         # Check reference SIP is correct
-        print("Checking Reference Process Metadata SIP ID")
-        logger.info(f"Process Metadata will be copied from {ps.get_pSIP_json(reference_sip.value)['Title']}")
+        print(f"\nShelfmark: {shelfmark.value}\nChecking Reference Process Metadata SIP ID:")
+        logger.info(f"\tProcess Metadata will be copied from {ps.get_pSIP_json(reference_sip.value)['Title']}")
 
         
         shelfmark.value = shelfmark.value.strip()
@@ -826,10 +831,15 @@ def getSIPStobuild():
             filemask = [filemask.replace(" ", "-") + '_']
             # filemask += "_"
         else:
-            # Need a warning here if another delimiter is used eg. a "," instead of a "";"
             filestr = str(filename.value)
+            # Need a warning here if another delimiter is used eg. a "," instead of a "";"
             if "," in filestr:
                 raise AttributeError(f'Please split multiple files using a semi-colon ";" in the "Filename / Groupings" column in the SIPS spreadsheet')
+            
+            # check that user has included the shelfmark itself in the grouping
+
+
+
 
             filemask = [x.replace("/", "-") for x in list(map(str.strip, filestr.split(";")))]
             # Strip any blank str from the filemask list. filter does bool(item) on filemask and only passes True items.
@@ -870,10 +880,17 @@ def getSIPStobuild():
     
     for sip in SIPS:
         checkfilenames.connect_to_sos(UNC, sip[1])
-        filepaths = checkfilenames.get_file_paths(sip[2])
+
+        # Add the files as specified under the "Filename / Groupings" heading e.g. ['C640-026-02', 'C640-026-03', 'C640-026-04', 'C640-026-01']
+        files_to_check = sip[2]
+        # Add the shelfmark itself to the list e.g. 'C640/026/01'
+        # shelfmark_fn = sip[0]
+        # files_to_check.append(shelfmark_fn.replace("/", "-").replace(" ", ""))
+
+        filepaths = checkfilenames.get_file_paths(sorted(files_to_check))
         filename_errors = checkfilenames.check_filenames(filepaths)
-        print(f"Checking filenames for {sip[0]}:")
-        print(*[filepath.name for filepath in filepaths], sep="\n")
+        print(f"\nChecking filenames for {sip[0]}:")
+        print(*[filepath.name for filepath in filepaths], sep="\t\n")
         
         if filename_errors[0]:
             raise_filename_error(filename_errors)
@@ -883,7 +900,7 @@ def getSIPStobuild():
                 raise_filename_error(regex_errors)
         # Remove the old_filename flag from the SIP
         sip.pop(3)
-    print("All filenames are correct.")
+    print(Fore.GREEN + "All filenames are correct.")
 
                 
     return SIPS

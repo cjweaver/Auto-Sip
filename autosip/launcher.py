@@ -33,6 +33,9 @@ import autosip.helpers.config as config
 import autosip.physical_structure.physical_structure as ps
 import autosip.physical_structure.sami_lookup as sami_lookup
 
+import tkinter as tk
+from tkinter import filedialog
+
 # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
 urllib3.disable_warnings()
 
@@ -777,17 +780,18 @@ def copy_processmetadata(src_sip_id, dest_sip_id, speed, eq, notes, process_meta
     
    
 
-def getSIPStobuild():
-    desktop = os.path.join(os.environ['USERPROFILE'], 'Desktop')
-    os.chdir(desktop)
+def getSIPStobuild(filepath):
+    # desktop = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+    # os.chdir(desktop)
 
     # Supress warning about "UserWarning: Data Validation extension is not supported and will be removed"
     # The SIPS spreadsheet forces data validation
     # https://stackoverflow.com/questions/30169149/what-causes-userwarning-discarded-range-with-reserved-name-openpyxl
     warnings.simplefilter("ignore")
-    wb = openpyxl.load_workbook('SIPS.xlsx')
+    wb = openpyxl.load_workbook(filepath)
     
-    print(f"\nReading the SIPS.xlsx spreadsheet from {desktop}")
+    
+    logger.info(f"\nReading spreadsheet {filepath}")
     warnings.simplefilter("default")
     
     ws = wb.active
@@ -797,46 +801,32 @@ def getSIPStobuild():
     next(rows)
     
     for row in rows:
-        
         shelfmark, filename, old_filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory = row
+        
         if shelfmark.value == None:
             # Stop reading the spreadsheet once you hit a blank shelfmark cell
             break
-        
+        shelfmark.value = shelfmark.value.strip()
         
         # The following values cannot be blank
         if not all((directory.value, item_format.value, pm_date.value, reference_sip.value)):
             raise AttributeError(f'Missing a required value(s) from row {directory.row} in the SIPS spreadsheet')
 
         # Check reference SIP is correct
-        print(f"\nShelfmark: {shelfmark.value}\nChecking Reference Process Metadata SIP ID:")
+        logger.info(f"\nShelfmark: {shelfmark.value}\nChecking Reference Process Metadata SIP ID:")
         logger.info(f"\tProcess Metadata will be copied from {ps.get_pSIP_json(reference_sip.value)['Title']}")
-
-        
-        shelfmark.value = shelfmark.value.strip()
                
         if filename.value == None:
-            #print(row)
-            #print("This is the current shelfmark", shelfmark.value)
-            # Filemask for old filename schema
-            # Should probably do this later?
-            # NEED To write something proper here!!!
-            #filemask = shelfmark.value[-4:] + "X"
-            # Need removed zero padding from shelfmark
-            filemask = (shelfmark.value).replace(" ", "")
+            # filemask = (shelfmark.value).replace(" ", "")
             filemask = (shelfmark.value).replace("/", "-")
             filemask = [filemask.replace(" ", "-") + '_']
-            # filemask += "_"
         else:
             filestr = str(filename.value)
-            # Need a warning here if another delimiter is used eg. a "," instead of a "";"
+            # Warning here if another delimiter is used eg. a "," instead of a "";"
             if "," in filestr:
                 raise AttributeError(f'Please split multiple files using a semi-colon ";" in the "Filename / Groupings" column in the SIPS spreadsheet')
             
             # check that user has included the shelfmark itself in the grouping
-
-
-
 
             filemask = [x.replace("/", "-") for x in list(map(str.strip, filestr.split(";")))]
             # Strip any blank str from the filemask list. filter does bool(item) on filemask and only passes True items.
@@ -864,7 +854,7 @@ def getSIPStobuild():
                     
         l = [shelfmark.value, directory, filemask, old_filename, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value, log_directory.value]
         SIPS.append(l)
-        
+
     ######################################################
     # Check for duplicate shelfmarks in the spreadsheet  #
     ######################################################
@@ -896,9 +886,10 @@ def getSIPStobuild():
 
         filepaths = checkfilenames.get_file_paths(sorted(files_to_check))
         filename_errors = checkfilenames.check_filenames(filepaths)
-        print(f"\nChecking filenames for {sip[0]}:")
-        print(*[filepath.name for filepath in filepaths], sep="\t\n")
-        
+        logger.info(f"\nChecking filenames for {sip[0]}:")
+        logger.info("\n".join([filepath.name for filepath in filepaths]))
+        # print(*[filepath.name for filepath in filepaths], sep="\t\n")
+
         if filename_errors[0]:
             raise_filename_error(filename_errors)
         if sip[3] == False:
@@ -908,14 +899,26 @@ def getSIPStobuild():
         # Remove the old_filename flag from the SIP
         sip.pop(3)
     print(Fore.GREEN + "All filenames are correct.")
-
-                
     return SIPS
 
 def main():
+
+    application_window = tk.Tk()
+    # Build a list of tuples for each file type the file dialog should display
+    my_filetypes = [('', '.xlsx'), ('all files', '.*')]
+
+    # Ask the user to select a single file name.
+    answer = filedialog.askopenfilename(parent=application_window,
+                                        initialdir=os.getcwd(),
+                                        title="Please select SIP spreadsheet",
+                                        filetypes=my_filetypes)
+
+    application_window.destroy()
     # root = Tk()
     # root.filename = filedialog.askopenfilename(initialdir="c:\\", title="Select SIP list")
-    # print(root.filename)
+
+
+    print(answer)
     
     print("""
     ********************************************************************************
@@ -937,7 +940,7 @@ def main():
     
         
     try:
-        SIPS = getSIPStobuild()
+        SIPS = getSIPStobuild(answer)
     # This would be a good case-switch use here
     except ValueError:
         print(Fore.RED + "\nMissing columns from the spreadsheet. This version of AutoSIP requires 'Old BL Filename?' as one of the column headings.\n")

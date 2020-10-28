@@ -4,6 +4,7 @@
 import os
 import pathlib
 import re
+from colorama import Fore, Back, Style, init
 
 # Insert the BL filename regex here. Ensure that the leading r is kept for "raw" string
 bl_regex = r"[A-Z]{2,5}_[A-Za-z0-9-]{1,}(_i\d{1,3})?_s([0-9]{1}|[1-9]{1,2})_f\d{2}_v\d{1,2}"
@@ -69,7 +70,7 @@ def get_file_paths(filemask):
         for result in pathlib.Path.cwd().glob('*' + f + '*.wav'):
             filepaths.append(result)
     if not filepaths:
-        print(f"Unable to find any files matching {filemask}.")
+        print(Back.RED + f"\nUnable to find any files matching {filemask}.")
         raise FileNotFoundError         
     else:    
         return filepaths

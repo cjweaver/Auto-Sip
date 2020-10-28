@@ -185,6 +185,8 @@ def physical_items_from(files_json, sip_id, item_format, sip_text, shelfmark_ord
 
     """
 
+    shelfmark_order = shelfmarks_to_filename_standard(shelfmark_order)
+
     physical_items = {key:{key: list(group) for key, group in groupby(group, lambda sub_group: shelfmark_from_file_json(sub_group))} for key, group in groupby(files_json, lambda file_json: filter_sub_shelfmarks(shelfmark_from_file_json(file_json), shelfmark_order))}
 
 
@@ -207,7 +209,8 @@ def physical_items_from(files_json, sip_id, item_format, sip_text, shelfmark_ord
     current_structure['text'] = sip_text
 
     for shelfmark in shelfmark_order:
-        print("\n", shelfmark)
+
+        print(f"\n {shelfmark}")
 
         for item in list(physical_items[shelfmark]): 
             print(item)
@@ -279,7 +282,7 @@ def shelfmarks_to_filename_standard(shelfmark_order):
     Returns:
         list: List of str stripped of whitespace and '/' replaced with '-'
     """
-    return [shelfmark.replace(" ", "").replace("/", "-") for shelfmark in shelfmark_order]
+    return [shelfmark.replace(" ", "-").replace("/", "-") for shelfmark in shelfmark_order]
 
 
 
@@ -303,14 +306,14 @@ def shelfmarks_to_filename_standard(shelfmark_order):
 
 
 
-sip_id = 66908
-shelfmark_order = shelfmarks_to_filename_standard(['WA 2010/017/154'])
-pSIP_json = get_pSIP_json(sip_id)
+# sip_id = 66908
+# shelfmark_order = shelfmarks_to_filename_standard(['WA 2010/017/154'])
+# pSIP_json = get_pSIP_json(sip_id)
 
-sip_text = pSIP_json['Title']
-files_json = pSIP_json['Files']
-user_id = pSIP_json['UserId']
-physical_step_state_id = [i['StepStateId'] for i in pSIP_json['StepStates'] if i['StepTitle'] == 'Physical Structure'][0]
+# sip_text = pSIP_json['Title']
+# files_json = pSIP_json['Files']
+# user_id = pSIP_json['UserId']
+# physical_step_state_id = [i['StepStateId'] for i in pSIP_json['StepStates'] if i['StepTitle'] == 'Physical Structure'][0]
 
 
 # # # # # pSIP_json = get_pSIP_json(66839)
@@ -346,14 +349,14 @@ physical_step_state_id = [i['StepStateId'] for i in pSIP_json['StepStates'] if i
 
 # groupby(group, lambda sub_group: shelfmark_from_file_json(sub_group)))
 
-sip_physical_structure = physical_items_from(files_json, sip_id, "Tape", sip_text, shelfmark_order)
+# sip_physical_structure = physical_items_from(files_json, sip_id, "Tape", sip_text, shelfmark_order)
 
 # with open("sip_test.json", "w") as f:
 #     f.write(json.dumps(sip_physical_structure))
 
 
 # patch_physical_structure(44618, sip_physical_structure, physical_step_state_id, user_id)
-print()
+
 
 # need to mark the physical structure step complete.
 

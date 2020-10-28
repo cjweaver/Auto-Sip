@@ -784,24 +784,21 @@ def getSIPStobuild():
     # Supress warning about "UserWarning: Data Validation extension is not supported and will be removed"
     # The SIPS spreadsheet forces data validation
     # https://stackoverflow.com/questions/30169149/what-causes-userwarning-discarded-range-with-reserved-name-openpyxl
-
     warnings.simplefilter("ignore")
     wb = openpyxl.load_workbook('SIPS.xlsx')
     
-    
     print(f"\nReading the SIPS.xlsx spreadsheet from {desktop}")
-    # warnings.simplefilter("default")
+    warnings.simplefilter("default")
     
     ws = wb.active
     rows = ws.rows
-    #print(rows)
     SIPS = []
     # Skip first row where the headings ("shelfmark", "Directory") are stored
     next(rows)
     
     for row in rows:
         
-        shelfmark, filename, old_filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory= row
+        shelfmark, filename, old_filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory = row
         if shelfmark.value == None:
             # Stop reading the spreadsheet once you hit a blank shelfmark cell
             break
@@ -867,12 +864,22 @@ def getSIPStobuild():
                     
         l = [shelfmark.value, directory, filemask, old_filename, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value, log_directory.value]
         SIPS.append(l)
-
         
+    ######################################################
+    # Check for duplicate shelfmarks in the spreadsheet  #
+    ######################################################
+    def check_for_dup_shelfmark(SIPS):
+        shelfmarks = [sip[0] for sip in SIPS]
+        filtered_shelfmarks = list(filter(lambda shelfmark: shelfmarks.count(shelfmark) > 1, shelfmarks))
+        if len(filtered_shelfmarks) > 1:
+            raise AttributeError(f"The shelfmark {filtered_shelfmarks[0]} appears more than once in the SIPS spreadsheet")
+
+    check_for_dup_shelfmark(SIPS)
+
 
         
     #####################
-    # Check filenames
+    # Check filenames   #
     #####################
     def raise_filename_error(errors):
         # https://stackoverflow.com/questions/44780357/how-to-use-newline-n-in-f-string-to-format-output-in-python-3-6
@@ -933,7 +940,7 @@ def main():
         SIPS = getSIPStobuild()
     # This would be a good case-switch use here
     except ValueError:
-        print("\nMissing columns from the spreadsheet. This version of AutoSIP requires 'Old BL Filename?' as one of the column headings.\n")
+        print(Fore.RED + "\nMissing columns from the spreadsheet. This version of AutoSIP requires 'Old BL Filename?' as one of the column headings.\n")
         end_prog()
 
     except FileNotFoundError as e:
@@ -941,11 +948,11 @@ def main():
         end_prog()
         
     except AttributeError as e:
-        print(f"\n{e}\n\nPlease correct these and start Auto-SIP again")
+        print(Fore.RED + f"\n{e}\n\nPlease correct these and start Auto-SIP again")
         end_prog()
 
     except Exception as e:
-        print(f"\n{e}\n\nPlease correct these and start Auto-SIP again")
+        print(Fore.RED + f"\n{e}\n\nPlease correct these and start Auto-SIP again")
         end_prog()
     
     
@@ -1019,13 +1026,14 @@ def main():
         except Exception as e:
             failed_sips.append((shelfmark + ":  " + str(e)))
             continue
-
+    
+    print(Back.WHITE + "pSIP building complete")
     if len(failed_sips) == 0:
         print("\n********************************************************************************")
-        logger.info("All SIPs completed.")
+        logger.info(Fore.GREEN + "All SIPs completed.")
     else:
         print("\n********************************************************************************")
-        print("The following SIPs did not complete sucessfully:\n", )
+        print(Fore.RED + "The following SIPs did not complete sucessfully:\n", )
         print(*failed_sips, sep="\n")
         logger.debug("Failures: %s", failed_sips)
             

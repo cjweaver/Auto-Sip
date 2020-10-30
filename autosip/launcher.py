@@ -51,7 +51,7 @@ UNC = config.UNC
 
 
 
-log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B %d %Y__%H-%M-%S") +".log"
+log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B_%d_%Y_-_%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s %(message)-12s', datefmt='%m-%d %H:%M')
@@ -205,8 +205,10 @@ def createNewsip(shelfmark, grouping="None"):
             modal = driver.wait.until(EC.presence_of_element_located((By.XPATH, "//*[@class='modal-open']")))
             if "has already been associated" in modal.get_attribute('textContent'):
                 creator = re.findall(r'by\s[a-zA-Z\.]+', modal.get_attribute('textContent'))[0]
-                raise Exception(f"The pSIP has already been created {creator}.")
+                logger.debug(f"The pSIP has already been created by {creator}.")
+                raise Exception(f"The pSIP has already been created by {creator}.")
             elif "already has an L-ARK in field 975, do you want to proceed?" in modal.get_attribute('textContent'):
+                logger.debug(f"The selected SAMI record {sami_item_text} already has an L-ARK")
                 raise Exception(f"The selected SAMI record {sami_item_text} already has an L-ARK")
     
 
@@ -250,7 +252,16 @@ def source_files(directory, file_patterns, sip_id, pm_date, reference_sip):
     #s1 = ui.Select(driver.find_element_by_id('currentSourceBox'))
     # Select another directory before the one you want to allow KnockoutJS to populate search box with the path.
 
-    
+
+    # For a future non-webdriver version of AutoSIP
+    # js = '''var xhr = new XMLHttpRequest();
+    #         xhr.open('POST', 'https://v12l-avsip.ad.bl.uk:8450/api/files/getdir/2c8f2946-04f5-4b13-8649-bfa1d78a192c', false);
+    #         xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+    #         xhr.send('dir=%5C%5Cp12l-nas6%5CSOS_HLF%5Ctest&pattern=&subdirs=false');
+    #         return xhr.response;'''
+
+    # result = driver.execute_script(js)
 
 
     s1.select_by_index(0)
@@ -388,13 +399,20 @@ def analysis(sip_id):
     # Sometimes you are dumped at the login screen
     handle_logout("File Analysis", "/Steps/Analyze/", sip_id)
      
-    # Copy All Files (Overwrite)
-    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='copy-files-buttons']/div/div/div/button[1]"))))
-    analysis_url = driver.current_url
     print("\n********************************************************************************")
     print("\nFile Analysis, Validation, and Transformation")
+    analysis_url = driver.current_url
     logging.debug(f"Current analysis page is: {analysis_url}")
     time.sleep(2)
+    # Copy All Files (Overwrite)
+    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='copy-files-buttons']/div/div/div/button[1]"))))
+    
+    # Copy file to server and start transformation(s). API for future versions without Selenium.
+    # https://v12l-avsip.ad.bl.uk:8450/Help/Api/GET-api-files-Transcode-sip_id-file_id-user_id-fail_transformation_initial_4xx-fail_transformation_initial_5xx-fail_validation_checksum-fail_validation-overwrite
+    # GET /api/files/copyfiletoserver/919/0/2c8f2946-04f5-4b13-8649-bfa1d78a192c/7211/true/true/false/false/false/true
+    # 
+    # Retry any failed transformations/analysis
+    # GET /api/files/Transcode/919/6763/2c8f2946-04f5-4b13-8649-bfa1d78a192c/false/false/false/false/true 
 
     print("\nProcessing files")
     
@@ -790,9 +808,9 @@ def getSIPStobuild(filepath):
     warnings.simplefilter("ignore")
     wb = openpyxl.load_workbook(filepath)
     
-    
-    logger.info(f"\nReading spreadsheet {filepath}")
-    warnings.simplefilter("default")
+    logger.info(f"Reading spreadsheet {filepath}")
+    # print("\n")
+    # warnings.simplefilter("default")
     
     ws = wb.active
     rows = ws.rows
@@ -813,7 +831,9 @@ def getSIPStobuild(filepath):
             raise AttributeError(f'Missing a required value(s) from row {directory.row} in the SIPS spreadsheet')
 
         # Check reference SIP is correct
-        logger.info(f"\nShelfmark: {shelfmark.value}\nChecking Reference Process Metadata SIP ID:")
+        print("\n")
+        logger.info(f"Shelfmark: {shelfmark.value}")
+        print("\nChecking Reference Process Metadata SIP ID:")
         logger.info(f"\tProcess Metadata will be copied from {ps.get_pSIP_json(reference_sip.value)['Title']}")
                
         if filename.value == None:
@@ -886,9 +906,12 @@ def getSIPStobuild(filepath):
 
         filepaths = checkfilenames.get_file_paths(sorted(files_to_check))
         filename_errors = checkfilenames.check_filenames(filepaths)
-        logger.info(f"\nChecking filenames for {sip[0]}:")
-        logger.info("\n".join([filepath.name for filepath in filepaths]))
+        print("\n")
+        logger.info(f"Checking filenames for {sip[0]}:")
+        # logger.info("\n".join([filepath.name for filepath in filepaths]))
         # print(*[filepath.name for filepath in filepaths], sep="\t\n")
+        for filepath in filepaths:
+            logger.info(filepath.name)
 
         if filename_errors[0]:
             raise_filename_error(filename_errors)
@@ -904,13 +927,14 @@ def getSIPStobuild(filepath):
 def main():
 
     application_window = tk.Tk()
+    application_window.withdraw()
     # Build a list of tuples for each file type the file dialog should display
     my_filetypes = [('', '.xlsx'), ('all files', '.*')]
 
     # Ask the user to select a single file name.
     answer = filedialog.askopenfilename(parent=application_window,
                                         initialdir=os.getcwd(),
-                                        title="Please select SIP spreadsheet",
+                                        title="Please select the pSIP spreadsheet",
                                         filetypes=my_filetypes)
 
     application_window.destroy()
@@ -989,7 +1013,7 @@ def main():
         
     # Implicit wait of 120 seconds!!! (although the condition is polled every 500 milliseconds)
     # https://selenium-python.readthedocs.io/waits.html
-    driver.wait = WebDriverWait(driver, 120)
+    driver.wait = WebDriverWait(driver, 30)
     
     
     SIP_tool_login(site, user, password)

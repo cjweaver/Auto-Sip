@@ -4,6 +4,7 @@
 import os
 import pathlib
 import re
+import itertools
 from colorama import Fore, Back, Style, init
 
 # Insert the BL filename regex here. Ensure that the leading r is kept for "raw" string
@@ -123,6 +124,12 @@ def check_reg_ex(filepaths, bl_regex, bl_regex_segments):
                     error = f"There is a problem with the field '{fname_seg}' in file: {fpath.name}"
                     hint = filename_hints.get(regex[0])
                     filename_errors.append(f"{error}\n{hint}")
+        
+        # Check for a item field accidently in the shelfmark e.g. C516-01-11-i1_s1_f01_v1
+        if list(filter(None, map(re.search, itertools.repeat('-i\d', len(fpath.stem.split("_"))), fpath.stem.split("_")))):
+            errors = True
+            filename_errors.append(f"An item field appears in the shelfmark. Perhaps a hypen instead of an underscore")
+
     if errors:
         return (True, filename_errors)
     else:

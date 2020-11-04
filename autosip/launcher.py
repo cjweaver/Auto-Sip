@@ -819,7 +819,7 @@ def getSIPStobuild(filepath):
     next(rows)
     
     for row in rows:
-        shelfmark, filename, old_filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory = row
+        shelfmark, filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory = row
         
         if shelfmark.value == None:
             # Stop reading the spreadsheet once you hit a blank shelfmark cell
@@ -838,25 +838,26 @@ def getSIPStobuild(filepath):
                
         if filename.value == None:
             # filemask = (shelfmark.value).replace(" ", "")
-            filemask = (shelfmark.value).replace("/", "-")
-            filemask = [filemask.replace(" ", "-") + '_']
+            filemask = [shelfmark.value.replace("/", "-").replace(" ", "-")]
         else:
             filestr = str(filename.value)
             # Warning here if another delimiter is used eg. a "," instead of a "";"
             if "," in filestr:
                 raise AttributeError(f'Please split multiple files using a semi-colon ";" in the "Filename / Groupings" column in the SIPS spreadsheet')
             
+            # To do???
             # check that user has included the shelfmark itself in the grouping
+
 
             filemask = [x.replace("/", "-") for x in list(map(str.strip, filestr.split(";")))]
             # Strip any blank str from the filemask list. filter does bool(item) on filemask and only passes True items.
             # filter(None, item) - If None, the function defaults to Identity function - which returns false if any elements are false
             filemask = list(filter(None, filemask))
 
-        if old_filename.value == None:
-            old_filename = False
-        else:
-            old_filename = True
+        # if old_filename.value == None:
+        #     old_filename = False
+        # else:
+        #     old_filename = True
         
         dir_parts = list(map(str.strip, directory.value.split("\\")))
         directory = os.path.join(*dir_parts)
@@ -872,7 +873,7 @@ def getSIPStobuild(filepath):
                 pm_date = "NO"
             
                     
-        l = [shelfmark.value, directory, filemask, old_filename, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value, log_directory.value]
+        l = [shelfmark.value, directory, filemask, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value, log_directory.value]
         SIPS.append(l)
 
     ######################################################
@@ -900,14 +901,18 @@ def getSIPStobuild(filepath):
 
         # Add the files as specified under the "Filename / Groupings" heading e.g. ['C640-026-02', 'C640-026-03', 'C640-026-04', 'C640-026-01']
         files_to_check = sip[2]
+        # files_to_check.append(sip[2])
         # Add the shelfmark itself to the list e.g. 'C640/026/01'
         # shelfmark_fn = sip[0]
-        # files_to_check.append(shelfmark_fn.replace("/", "-").replace(" ", ""))
+        # files_to_check.append(shelfmark_fn.replace(" ", "-").replace("/", "-"))
 
         filepaths = checkfilenames.get_file_paths(sorted(files_to_check))
+        
+        # Check filenames for common errors - spaces, extra dots
         filename_errors = checkfilenames.check_filenames(filepaths)
         print("\n")
         logger.info(f"Checking filenames for {sip[0]}:")
+        
         # logger.info("\n".join([filepath.name for filepath in filepaths]))
         # print(*[filepath.name for filepath in filepaths], sep="\t\n")
         for filepath in filepaths:
@@ -915,12 +920,13 @@ def getSIPStobuild(filepath):
 
         if filename_errors[0]:
             raise_filename_error(filename_errors)
-        if sip[3] == False:
-            regex_errors = checkfilenames.check_reg_ex(filepaths, checkfilenames.bl_regex, checkfilenames.bl_regex_segments)
-            if regex_errors[0]:
-                raise_filename_error(regex_errors)
+        # if sip[3] == False:
+        regex_errors = checkfilenames.check_reg_ex(filepaths, checkfilenames.bl_regex, checkfilenames.bl_regex_segments)
+        if regex_errors[0]:
+            raise_filename_error(regex_errors)
         # Remove the old_filename flag from the SIP
-        sip.pop(3)
+        # Do we need to remove this?
+        # sip.pop(3)
     print(Fore.GREEN + "All filenames are correct.")
     return SIPS
 

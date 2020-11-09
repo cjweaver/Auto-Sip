@@ -601,13 +601,13 @@ def physical_structure(physical_structure_url, sip_id, item_format):
             s1 = ui.Select(elem)
             s1.select_by_index(i)
             i += 1
-        # Do you need to save if you come via structure_failsafe?
-    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "nav-save-button"))))
-    
-    time.sleep(1)
-
-    # Mark as step complete but don't click continue to avoid next page modal popup hanging the script
-    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))))
+    # Do you need to save if you come via structure_failsafe?
+    if driver.find_element_by_class_name("nav-save-button").get_attribute('disabled') == 'false':
+        driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "nav-save-button"))))
+    else:
+        time.sleep(1)
+        # Mark as step complete but don't click continue to avoid next page modal popup hanging the script
+        driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))))
 
     print("Complete.")
     print("\n********************************************************************************")
@@ -950,17 +950,19 @@ def main():
 
     print(answer)
     
-    print("""
+    print(Fore.MAGENTA + """
     ********************************************************************************
     
-    Auto-SIP - Last update September 1st 2020
+    TEST VERSION
 
-    This is for Chrome version 85.
+    Auto-SIP - Last update November 9th 2020
+
+    This is for Chrome version 86.
     
     Completes physical structure using SAMI and will check filenames against new schema.
-    (N.B currently not comptabile with filenames with the "i" item field)
+    (N.B filenames with the "i" item field default to CD-style physical structure)
 
-    Please make sure that you use the new SIPS.xls spreadsheet
+    Can use any spreadsheet to read SIPS.
 
     Very much a work in progress!
     For support christopher.weaver@bl.uk
@@ -1063,7 +1065,7 @@ def main():
     print(Back.WHITE + "pSIP building complete")
     if len(failed_sips) == 0:
         print("\n********************************************************************************")
-        logger.info(Fore.GREEN + "All SIPs completed.")
+        print(Fore.GREEN + "All SIPs completed.")
     else:
         print("\n********************************************************************************")
         print(Fore.RED + "The following SIPs did not complete sucessfully:\n", )

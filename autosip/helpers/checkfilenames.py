@@ -27,7 +27,7 @@ filename_hints = {
                                      Replace any existing separators in your shelf mark (e.g. ‘/’, ‘.’, ‘ ‘, &c.) with a hyphen (‘-‘)\n""", 
                     'item': """Precede the item number with an ‘i’ character. Do not pad with zeros
                                N.B. Items numbers are non-mandatory for a single item with a single shelf mark.\n""", 
-                    'side': """Precede the side number with an ‘s’ character. For born-digital files use ‘s0’.
+                    'side': """Precede the side number with an lower case ‘s’ character. For born-digital files use ‘s0’.
                                Sides are not zero padded.\n""", 
                     'file': "The 'file' field requires two digits, so files under ten should be padded with a single zero (e.g. 01, 02, and 09)\n", 
                     'version': """Record the version number of the file in cases where subjective choices have been made
@@ -109,7 +109,7 @@ def check_reg_ex(filepaths, bl_regex, bl_regex_segments):
 
     for fpath in filepaths:
         if not re.match(bl_regex, fpath.stem):
-            if len(fpath.stem.split("_")) == 5:
+            if len(fpath.stem.split("_")) == 5 and (return_missing_field == False):
                 regex_segs = bl_regex_segments.copy()
                 del regex_segs['item']
             # True if filename contains an "i" item field
@@ -119,8 +119,8 @@ def check_reg_ex(filepaths, bl_regex, bl_regex_segments):
                 # Check for the missing field in the filename
                 # Bit of a hack...
                 errors = True
-                missing_field = [prefix for prefix in ['f', 's', 'v'] if prefix not in [seg[0] for seg in fpath.stem.split("_")]][0]
-                filename_errors.append(f"The file {fpath.name} is missing the '{missing_field}' field.")
+                missing_field = return_missing_field(fpath)
+                filename_errors.append(f"The file {fpath.name} is missing the '{missing_field}' field(s).")
                 return (True, filename_errors)
             
             for regex, fname_seg in zip(regex_segs.items(), fpath.stem.split("_")):
@@ -133,10 +133,13 @@ def check_reg_ex(filepaths, bl_regex, bl_regex_segments):
         # Check for a item field accidently in the shelfmark e.g. C516-01-11-i1_s1_f01_v1
         if list(filter(None, map(re.search, itertools.repeat(r'-i\d', len(fpath.stem.split("_"))), fpath.stem.split("_")))):
             errors = True
-            filename_errors.append(f"An item field appears in the shelfmark in file {fpath.name}.\nPerhaps a hypen instead of an underscore")
+            filename_errors.append(f"An item field appears in the shelfmark in file {fpath.name}.\nPerhaps a hypen instead of an underscore\n")
 
     if errors:
         return (True, filename_errors)
     else:
         return (False, None)
 
+def return_missing_field(fpath):
+    # This is far too hacky and need to properly return missing field.
+    return [prefix for prefix in ['f', 's', 'v'] if prefix not in [seg[0] for seg in fpath.stem.split("_")]]

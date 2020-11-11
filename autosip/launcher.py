@@ -51,6 +51,10 @@ UNC = config.UNC
 
 
 
+##########################################################################################
+# See up the text file and console logging                                               #
+##########################################################################################
+
 log_name = "Auto-SIP " + datetime.datetime.today().strftime("%B_%d_%Y_-_%H-%M-%S") +".log"
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -65,15 +69,15 @@ formatter = logging.Formatter('%(message)s')
 console.setFormatter(formatter)
 logging.getLogger('').addHandler(console)
 
-
-# Reset Colorama 
+#################################################################
+# colorama will reset to standard console colour after each use #
+#################################################################
 init(autoreset=True)
 
 
 
 class TooManyRetries(Exception):
     pass
-
 retry_count = 0
 
    
@@ -634,7 +638,7 @@ def get_cd_log(shelfmark, log_directory):
 def end_prog():
     print(Back.RED + "Press any key to end the program.")
 
-    while(True):
+    while True:
         if msvcrt.kbhit():
             sys.exit()
             return
@@ -886,26 +890,25 @@ def getSIPStobuild(filepath):
             raise AttributeError(f"The shelfmark {filtered_shelfmarks[0]} appears more than once in the SIPS spreadsheet")
 
     check_for_dup_shelfmark(SIPS)
+    return SIPS
 
 
-        
-    #####################
-    # Check filenames   #
-    #####################
-    def raise_filename_error(errors):
+def check_filenames_in_SIPS(SIPS):
+#####################
+# Check filenames   #
+#####################
+    def print_filename_error(errors):
         # https://stackoverflow.com/questions/44780357/how-to-use-newline-n-in-f-string-to-format-output-in-python-3-6
-        raise AttributeError(f'Please correct the following filename errors: \n\n{chr(10).join(str(x) for x in errors[1])}')
+        return f'Please correct the following filename errors: \n\n{chr(10).join(str(x) for x in errors[1])}'
     
     for sip in SIPS:
         checkfilenames.connect_to_sos(UNC, sip[1])
-
         # Add the files as specified under the "Filename / Groupings" heading e.g. ['C640-026-02', 'C640-026-03', 'C640-026-04', 'C640-026-01']
         files_to_check = sip[2]
         # files_to_check.append(sip[2])
         # Add the shelfmark itself to the list e.g. 'C640/026/01'
         # shelfmark_fn = sip[0]
         # files_to_check.append(shelfmark_fn.replace(" ", "-").replace("/", "-"))
-
         filepaths = checkfilenames.get_file_paths(sorted(files_to_check))
         
         # Check filenames for common errors - spaces, extra dots
@@ -919,16 +922,16 @@ def getSIPStobuild(filepath):
             logger.info(filepath.name)
 
         if filename_errors[0]:
-            raise_filename_error(filename_errors)
+            return print_filename_error(filename_errors)
         # if sip[3] == False:
         regex_errors = checkfilenames.check_reg_ex(filepaths, checkfilenames.bl_regex, checkfilenames.bl_regex_segments)
         if regex_errors[0]:
-            raise_filename_error(regex_errors)
+            return print_filename_error(regex_errors)
         # Remove the old_filename flag from the SIP
         # Do we need to remove this?
         # sip.pop(3)
     print(Fore.GREEN + "All filenames are correct.")
-    return SIPS
+
 
 def main():
 
@@ -938,58 +941,43 @@ def main():
     my_filetypes = [('', '.xlsx'), ('all files', '.*')]
 
     # Ask the user to select a single file name.
-    answer = filedialog.askopenfilename(parent=application_window,
+    spreadsheet_path = filedialog.askopenfilename(parent=application_window,
                                         initialdir=os.getcwd(),
                                         title="Please select the pSIP spreadsheet",
                                         filetypes=my_filetypes)
 
     application_window.destroy()
-    # root = Tk()
-    # root.filename = filedialog.askopenfilename(initialdir="c:\\", title="Select SIP list")
-
-
-    print(answer)
     
-    print(Fore.MAGENTA + """
-    ********************************************************************************
-    
-    TEST VERSION
+    print(Fore.MAGENTA + config.splash_screen)
 
-    Auto-SIP - Last update November 9th 2020
-
-    This is for Chrome version 86.
-    
-    Completes physical structure using SAMI and will check filenames against new schema.
-    (N.B filenames with the "i" item field default to CD-style physical structure)
-
-    Can use any spreadsheet to read SIPS.
-
-    Very much a work in progress!
-    For support christopher.weaver@bl.uk
-    
-    ********************************************************************************
-    """)
-    
-        
+    #################################################################################
+    # Read spreadsheet and ensure the values (process metadata id) etc. are correct #
+    #################################################################################    
     try:
-        SIPS = getSIPStobuild(answer)
-    # This would be a good case-switch use here
+        SIPS = getSIPStobuild(spreadsheet_path)
     except ValueError:
-        print(Fore.RED + "\nMissing columns from the spreadsheet. This version of AutoSIP requires 'Old BL Filename?' as one of the column headings.\n")
+        print(Fore.RED + "\nMissing columns from the spreadsheet. Check this is the correct version of the spreadsheet.\n")
         end_prog()
-
     except FileNotFoundError as e:
         print(e)
         end_prog()
-        
-    except AttributeError as e:
+    except (AttributeError, Exception) as e:
         print(Fore.RED + f"\n{e}\n\nPlease correct these and start Auto-SIP again")
         end_prog()
 
-    except Exception as e:
-        print(Fore.RED + f"\n{e}\n\nPlease correct these and start Auto-SIP again")
-        end_prog()
-    
+
+    ################################################################################
+    # Check the file names are correct and match BL file name scheme               #
+    ################################################################################
+    filename_errors = check_filenames_in_SIPS(SIPS)
+    while filename_errors:
+        print(Fore.RED + f"\n{filename_errors}\n\nPlease correct the filename errors and hit any key to continue")
+        input()
+        filename_errors = check_filenames_in_SIPS(SIPS)
+
+
+
+
     
     # Get users login details
     user, password = ADloginDetails()

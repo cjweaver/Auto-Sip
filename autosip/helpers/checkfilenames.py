@@ -12,12 +12,12 @@ bl_regex = r"[A-Z]{2,5}_[A-Za-z0-9-]{1,}(_i\d{1,3})?_s([0-9]{1}|[1-9]{1,2})_f\d{
 
 # Same regex as above split into named filename fields. 
 bl_regex_segments = {
-                    'orignator': r"[A-Z]{2,5}", 
-                    'shelf mark': r"[A-Za-z0-9-]{1,}", 
-                    'item': r"i([1-9]{1}|[0-9]{1,3})", 
-                    'side': r"s([0-9]{1}|[1-9]{1,2})", 
-                    'file': r"f\d{2}", 
-                    'version': r"v\d{1,2}"
+                    'orignator': r"^[A-Z]{2,5}$", 
+                    'shelf mark': r"^[A-Za-z0-9-]{1,}$", 
+                    'item': r"^i([1-9]{1}|[0-9]{1,3})$", 
+                    'side': r"^s([0-9]{1}|[1-9]{1,2})$", 
+                    'file': r"^f\d{2}$", 
+                    'version': r"^v\d{1,2}$"
                     }
 
 # List of filename field rules. Taken from the document: "How to Create Filenames for Unlocking our Sound Heritage v0.4"
@@ -107,17 +107,21 @@ def check_reg_ex(filepaths, bl_regex, bl_regex_segments):
     filename_errors = []
     errors = False
 
-    # Need to differentiate between a field missing and a field being wrong.
-    # 4/11/2020 Cannot identify what field is missing.
-
     for fpath in filepaths:
         if not re.match(bl_regex, fpath.stem):
-            # True if filename contains an "i" item field
-            if len(fpath.stem.split("_")) != 6:
+            if len(fpath.stem.split("_")) == 5:
                 regex_segs = bl_regex_segments.copy()
                 del regex_segs['item']
-            else:
+            # True if filename contains an "i" item field
+            elif len(fpath.stem.split("_")) == 6:
                 regex_segs = bl_regex_segments
+            else:
+                # Check for the missing field in the filename
+                # Bit of a hack...
+                errors = True
+                missing_field = [prefix for prefix in ['f', 's', 'v'] if prefix not in [seg[0] for seg in fpath.stem.split("_")]][0]
+                filename_errors.append(f"The file {fpath.name} is missing the '{missing_field}' field.")
+                return (True, filename_errors)
             
             for regex, fname_seg in zip(regex_segs.items(), fpath.stem.split("_")):
                 if not re.match(regex[1], fname_seg):
@@ -136,15 +140,3 @@ def check_reg_ex(filepaths, bl_regex, bl_regex_segments):
     else:
         return (False, None)
 
-
-# def check_filename(filename, bl_regex, bl_regex_segments):
-#     result = [x for x in check_reg_ex(filename, bl_regex, bl_regex_segments)]
-#     print(result)
-#     print("finished Checking")
-
-
-
-# fnames = ["BL_C203-359/1_i1_ s1_f12_v.wav", "BL_C203-3591_s01_f1_v1.wav", "BL_C203-359_s100_f12_v1.wav", "BL_C203-359_s1_f12_v1.wav"]
-
-# for fname in fnames:
-#     print(check_filename(fname, bl_regex, bl_regex_segments))

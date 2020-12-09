@@ -261,7 +261,7 @@ def patch_physical_structure(sip_id, physical_structure, step_state_id, user_id)
         [type]: [description]
     """
 
-    url = f'{config.site}/api/SIP/physicalstructure/{sip_id}/{step_state_id}/{user_id}'
+    url = f'{config.site}/api/SIP/physicalstructure/{sip_id}/{step_state_id}/{user_id}/true'
     phys_array = []
     phys_array.append(physical_structure)
     body = {"Id": sip_id, "PhysicalStructure": json.dumps(phys_array)}

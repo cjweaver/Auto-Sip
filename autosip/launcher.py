@@ -36,6 +36,8 @@ import autosip.physical_structure.sami_lookup as sami_lookup
 import tkinter as tk
 from tkinter import filedialog
 
+import tenacity
+
 # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
 urllib3.disable_warnings()
 
@@ -224,7 +226,6 @@ def createNewsip(shelfmark, grouping="None"):
     return (url.split('/')[-2], sami_item_text)
 
 
-
 def date_tally(filenames):
     """Strips modified date from list of file information strings and returns the most common date as a datetime object"""
     
@@ -237,6 +238,10 @@ def date_tally(filenames):
     return tally_dates[-1][0]
 
 
+@tenacity.retry(wait=tenacity.wait.wait_exponential(multiplier=1, min=4, max=10), 
+       stop=tenacity.stop.stop_after_attempt(3), 
+       retry=tenacity.retry_if_exception_type(FileNotFoundError),
+       reraise=True)
 def source_files(directory, file_patterns, sip_id, pm_date, reference_sip):
     # First check this is the right page
     # Arrived here by clicking "Complete" in previous page
@@ -317,8 +322,9 @@ def source_files(directory, file_patterns, sip_id, pm_date, reference_sip):
         except NoSuchElementException:
             pass
         else:
-            print(f"Sorry cannot find that directory {path}. Check the spreadsheet.")
-            raise ValueError(f"Sorry cannot find that directory {path}. Check the spreadsheet.")
+            # print(f"Sorry cannot find that directory {path}. Check the spreadsheet.")
+            raise FileNotFoundError(f"Sorry cannot find that directory {path}. Check the spreadsheet for errors or retry in case of network problems.")
+
         try:
             driver.find_element_by_xpath('//span[contains(text(), "Found")]')
         except NoSuchElementException:
@@ -327,7 +333,7 @@ def source_files(directory, file_patterns, sip_id, pm_date, reference_sip):
             _ = driver.find_element_by_xpath('//span[contains(text(), "Found")]').text
             if " 0 files" in _:
                 print(f"Sorry no files found with filename {file_pattern} in directory {path}")
-                raise ValueError(f"Sorry no files found with filename {file_pattern} in directory {path}")
+                raise FileNotFoundError(f"Sorry no files found with filename {file_pattern} in directory {path}")
     
         
         driver.wait.until(EC.presence_of_element_located((By.ID, "accordion")))
@@ -576,42 +582,42 @@ def physical_structure(physical_structure_url, sip_id, item_format):
     except KeyError:
         structure_failsafe = True
       
-    # Haven't arrived via clicking "Continue" from last step
-    # so...
-    driver.get(site + "/" + physical_structure_url)
-    handle_logout("Physical Structure", "/Steps/Physical/", sip_id)
+        # Haven't arrived via clicking "Continue" from last step
+        # so...
+        driver.get(site + "/" + physical_structure_url)
+        handle_logout("Physical Structure", "/Steps/Physical/", sip_id)
 
-    #  Wait for the format type drop down to appear as an indication the page has finished loading.
-    driver.wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="demo1"]/div/div[1]/div[1]/select')))
+        #  Wait for the format type drop down to appear as an indication the page has finished loading.
+        driver.wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="demo1"]/div/div[1]/div[1]/select')))
 
-    # The failsafe physical structure will simply add all the files to the first object like a CD.
-    # Allowing the pSIP to be continued to be constructed.
-    # Users will have to correct that page once the pSIP(s) are complete.
-    if structure_failsafe:
-        s1 = ui.Select(driver.wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="demo1"]/div/div[1]/div[1]/select'))))
-        print(f"\nPhysical structure: {item_format}")
-        s1.select_by_visible_text(item_format)
-        #s1.select_by_index(2)
-        time.sleep(1)
+        # The failsafe physical structure will simply add all the files to the first object like a CD.
+        # Allowing the pSIP to be continued to be constructed.
+        # Users will have to correct that page once the pSIP(s) are complete.
+        if structure_failsafe:
+            s1 = ui.Select(driver.wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="demo1"]/div/div[1]/div[1]/select'))))
+            print(f"\nPhysical structure: {item_format}")
+            s1.select_by_visible_text(item_format)
+            #s1.select_by_index(2)
+            time.sleep(1)
 
-        for i in range((len(file_names)) - 1):
-        # Clicking the dropdown above automatically adds a file select, hence len(file_names) - 1
-            driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='demo2']/div/div[1]/div[3]/button[2]"))))
-            # driver.wait.until(EC.presence_of_element_located((By.ID, "structure-heading")))
-        select_div = driver.find_element_by_xpath('//*[@id="demo2"]/div/div[2]/ul')
-        selects = select_div.find_elements_by_tag_name("select")
-        i = 1
-        for elem in selects:
-            s1 = ui.Select(elem)
-            s1.select_by_index(i)
-            i += 1
-    # Do you need to save if you come via structure_failsafe?
-    if driver.find_element_by_class_name("nav-save-button").get_attribute('disabled') == 'false':
-        driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "nav-save-button"))))
-    else:
-        time.sleep(1)
-        # Mark as step complete but don't click continue to avoid next page modal popup hanging the script
-        driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))))
+            for i in range((len(file_names)) - 1):
+            # Clicking the dropdown above automatically adds a file select, hence len(file_names) - 1
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='demo2']/div/div[1]/div[3]/button[2]"))))
+                # driver.wait.until(EC.presence_of_element_located((By.ID, "structure-heading")))
+            select_div = driver.find_element_by_xpath('//*[@id="demo2"]/div/div[2]/ul')
+            selects = select_div.find_elements_by_tag_name("select")
+            i = 1
+            for elem in selects:
+                s1 = ui.Select(elem)
+                s1.select_by_index(i)
+                i += 1
+        # Do you need to save if you come via structure_failsafe?
+        if driver.find_element_by_class_name("nav-save-button").get_attribute('disabled') == 'false':
+            driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "nav-save-button"))))
+        else:
+            time.sleep(1)
+            # Mark as step complete but don't click continue to avoid next page modal popup hanging the script
+            driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))))
 
     print("Complete.")
     print("\n********************************************************************************")

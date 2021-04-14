@@ -143,7 +143,7 @@ def saveContinue():
     #driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))).click()
     driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='page-content-wrapper']/div[2]/div[2]/nav/button[3]"))))
 
-def createNewsip(shelfmark, grouping="None"):
+def createNewsip(shelfmark, duplicate_sip, grouping = None):
     # Search SAMI for shelfmark
     driver.get(f"{site}/Steps/Search")
     handle_logout("SAMI Search", "/Steps/Search/")
@@ -210,9 +210,12 @@ def createNewsip(shelfmark, grouping="None"):
         if driver.find_element_by_xpath("//button[text()='Continue ']").get_attribute('disabled') == 'true':
             modal = driver.wait.until(EC.presence_of_element_located((By.XPATH, "//*[@class='modal-open']")))
             if "has already been associated" in modal.get_attribute('textContent'):
-                creator = re.findall(r'by\s[a-zA-Z\.]+', modal.get_attribute('textContent'))[0]
-                logger.debug(f"The pSIP has already been created by {creator}.")
-                raise Exception(f"The pSIP has already been created by {creator}.")
+                if duplicate_sip: # Set to 'True' in the spreadsheet, otherwise left blank to evalualate to False.
+                    driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div/div[3]/button[1]"))))
+                else:    
+                    creator = re.findall(r'by\s[a-zA-Z\.]+', modal.get_attribute('textContent'))[0]
+                    logger.debug(f"The pSIP has already been created by {creator}.")
+                    raise Exception(f"The pSIP has already been created by {creator}.")
             elif "already has an L-ARK in field 975, do you want to proceed?" in modal.get_attribute('textContent'):
                 logger.debug(f"The selected SAMI record {sami_item_text} already has an L-ARK")
                 raise Exception(f"The selected SAMI record {sami_item_text} already has an L-ARK")
@@ -238,7 +241,7 @@ def date_tally(filenames):
     return tally_dates[-1][0]
 
 
-@tenacity.retry(wait=tenacity.wait.wait_exponential(multiplier=1, min=4, max=10), 
+@tenacity.retry(wait=tenacity.wait.wait_exponential(multiplier=1, min=10, max=30), 
        stop=tenacity.stop.stop_after_attempt(3), 
        retry=tenacity.retry_if_exception_type(FileNotFoundError),
        reraise=True)
@@ -377,8 +380,17 @@ def source_files(directory, file_patterns, sip_id, pm_date, reference_sip):
         reference_sip_json = ps.get_pSIP_json(reference_sip)
         reference_sip_pm = json.loads(reference_sip_json['ProcessMetadata'])
         refernce_sip_date = [process['date'] for process in reference_sip_pm['processMetadata'][0]['children'] if process['processType'] == 'Migration'][0] 
-        process_metadata_date = datetime.datetime.strptime(refernce_sip_date, "%Y-%m-%d")
+        
+        # Both of the following time formats appear in process metadata.
         # process_metadata_date = datetime.datetime.strptime(refernce_sip_date, "%Y-%m-%dT%H:%M:%S.%fZ")
+        # "Borrowed" from https://stackoverflow.com/questions/5045210/how-to-remove-unconverted-data-from-a-python-datetime-object
+        # 26 is the len('unconverted data remains: ')
+        try:
+            process_metadata_date = datetime.datetime.strptime(refernce_sip_date, "%Y-%m-%d")
+        except ValueError as v:
+            if len(v.args) > 0 and v.args[0].startswith('unconverted data remains: '):
+                refernce_sip_date = refernce_sip_date[:-(len(v.args[0]) - 26)]
+                process_metadata_date = datetime.datetime.strptime(refernce_sip_date, "%Y-%m-%d")
         print("\nUsing the dates specified in the reference SIP process metadata page")
     elif pm_date == "YES":
         # use file creation date
@@ -568,6 +580,7 @@ def physical_structure(physical_structure_url, sip_id, item_format):
     titleID = sami_lookup.get_title_id(sip_id)
     SAMI_XML = sami_lookup.get_SAMI_xml(titleID)
     shelfmark_order = sami_lookup.shelfmark_order(SAMI_XML)
+    subshelfmark_order = sami_lookup.subshelfmark_order(SAMI_XML)
     
     # if sami_lookup.multiple_callnumbers(SAMI_XML):
     # Need to check for item field in files and fallback to structure failsafe if True
@@ -602,7 +615,7 @@ def physical_structure(physical_structure_url, sip_id, item_format):
 
             for i in range((len(file_names)) - 1):
             # Clicking the dropdown above automatically adds a file select, hence len(file_names) - 1
-                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='demo2']/div/div[1]/div[3]/button[2]"))))
+                driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='demo2']/div/div[1]/div[3]/button[1]"))))
                 # driver.wait.until(EC.presence_of_element_located((By.ID, "structure-heading")))
             select_div = driver.find_element_by_xpath('//*[@id="demo2"]/div/div[2]/ul')
             selects = select_div.find_elements_by_tag_name("select")
@@ -611,13 +624,21 @@ def physical_structure(physical_structure_url, sip_id, item_format):
                 s1 = ui.Select(elem)
                 s1.select_by_index(i)
                 i += 1
+        time.sleep(5)
         # Do you need to save if you come via structure_failsafe?
-        if driver.find_element_by_class_name("nav-save-button").get_attribute('disabled') == 'false':
+        if driver.find_element_by_class_name("nav-save-button").get_property('disabled') == False:
+            print("clicking the save button")
             driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "nav-save-button"))))
+            driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))))
         else:
-            time.sleep(1)
+            print("already saved")
             # Mark as step complete but don't click continue to avoid next page modal popup hanging the script
             driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))))
+            # driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "step-complete-checkbox"))))
+        time.sleep(2)
+        driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='page-content-wrapper']/div[3]/nav/button[3]"))))
+            
+            
 
     print("Complete.")
     print("\n********************************************************************************")
@@ -829,7 +850,7 @@ def getSIPStobuild(filepath):
     next(rows)
     
     for row in rows:
-        shelfmark, filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory = row
+        shelfmark, filename, directory, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory, duplicate_sip, old_filename_format = row
         
         if shelfmark.value == None:
             # Stop reading the spreadsheet once you hit a blank shelfmark cell
@@ -838,7 +859,7 @@ def getSIPStobuild(filepath):
         
         # The following values cannot be blank
         if not all((directory.value, item_format.value, pm_date.value, reference_sip.value)):
-            raise AttributeError(f'Missing a required value(s) from row {directory.row} in the SIPS spreadsheet')
+            raise AttributeError(f'Missing a required value(s) from row {directory.row - 1} {shelfmark.value} in the SIPS spreadsheet')
 
         # Check reference SIP is correct
         print("\n")
@@ -881,9 +902,16 @@ def getSIPStobuild(filepath):
                 pm_date = "YES"
             elif "NO" in pm_date:
                 pm_date = "NO"
-            
+
+        # Openpyxl evalualates directly to a boolean value
+        # if duplicate_sip.value == 'TRUE':
+        #     duplicate_sip = True
+        # else:
+        #     duplicate_sip = None    
                     
-        l = [shelfmark.value, directory, filemask, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value, log_directory.value]
+        l = [shelfmark.value, directory, filemask, item_format.value, pm_date, 
+            reference_sip.value, speed.value, eq.value, noise_reduction.value, 
+            notes.value, log_directory.value, duplicate_sip.value, old_filename_format.value]
         SIPS.append(l)
 
     ######################################################
@@ -908,6 +936,8 @@ def check_filenames_in_SIPS(SIPS):
         return f'Please correct the following filename errors: \n\n{chr(10).join(str(x) for x in errors[1])}'
     
     for sip in SIPS:
+        print("\n")
+        logger.info(f"Checking filenames for {sip[0]}:")
         checkfilenames.connect_to_sos(UNC, sip[1])
         # Add the files as specified under the "Filename / Groupings" heading e.g. ['C640-026-02', 'C640-026-03', 'C640-026-04', 'C640-026-01']
         files_to_check = sip[2]
@@ -919,8 +949,6 @@ def check_filenames_in_SIPS(SIPS):
         
         # Check filenames for common errors - spaces, extra dots
         filename_errors = checkfilenames.check_filenames(filepaths)
-        print("\n")
-        logger.info(f"Checking filenames for {sip[0]}:")
         
         # logger.info("\n".join([filepath.name for filepath in filepaths]))
         # print(*[filepath.name for filepath in filepaths], sep="\t\n")
@@ -929,7 +957,11 @@ def check_filenames_in_SIPS(SIPS):
 
         if filename_errors[0]:
             return print_filename_error(filename_errors)
-        # if sip[3] == False:
+
+        if sip[12] == True:
+            logger.info("Old filename scheme in use. Skipping Regex check")
+            continue
+
         regex_errors = checkfilenames.check_reg_ex(filepaths, checkfilenames.bl_regex, checkfilenames.bl_regex_segments)
         if regex_errors[0]:
             return print_filename_error(regex_errors)
@@ -975,11 +1007,21 @@ def main():
     ################################################################################
     # Check the file names are correct and match BL file name scheme               #
     ################################################################################
-    filename_errors = check_filenames_in_SIPS(SIPS)
-    while filename_errors:
-        print(Fore.RED + f"\n{filename_errors}\n\nPlease correct the filename errors and hit any key to continue")
-        input()
+    try:
         filename_errors = check_filenames_in_SIPS(SIPS)
+        while filename_errors:
+            print(Fore.RED + f"\n{filename_errors}\n\nPlease correct the filename errors and hit any key to continue")
+            input()
+            filename_errors = check_filenames_in_SIPS(SIPS)
+    except FileNotFoundError as e:
+        print(e)
+        end_prog()
+
+    # filename_errors = check_filenames_in_SIPS(SIPS)
+    # while filename_errors:
+    #     print(Fore.RED + f"\n{filename_errors}\n\nPlease correct the filename errors and hit any key to continue")
+    #     input()
+    #     filename_errors = check_filenames_in_SIPS(SIPS)
 
 
 
@@ -1028,14 +1070,14 @@ def main():
     global retry_count
     for sip in SIPS:
         retry_count = 0
-        shelfmark, directory, filemasks, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory = sip
+        shelfmark, directory, filemasks, item_format, pm_date, reference_sip, speed, eq, noise_reduction, notes, log_directory, duplicate_sip, old_filename_format = sip
         print("\n\n\n\n\n")
         print("\n********************************************************************************")
         logger.info(f"Procesing current shelfmark {shelfmark}")
 
         try:
             cdlog_text = get_cd_log(shelfmark, log_directory)
-            sip_id, sip_text = createNewsip(shelfmark)
+            sip_id, sip_text = createNewsip(shelfmark, duplicate_sip)
             print("Creating SIP")
             logger.info(f"SIP ID for shelfmark {shelfmark} is {sip_id}")
             

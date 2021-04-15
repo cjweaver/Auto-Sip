@@ -170,7 +170,7 @@ def filter_sub_shelfmarks(shelfmark, shelfmark_order):
 
 
 
-def physical_items_from(files_json, sip_id, item_format, sip_text, shelfmark_order):
+def physical_items_from(files_json, sip_id, item_format, sip_text, shelfmark_order, subshelfmark_order = None):
     """Create the physical structure
 
     Args:

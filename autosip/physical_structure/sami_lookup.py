@@ -35,6 +35,11 @@ def shelfmark_order(SAMI_XML):
     return [shelfmark.text for shelfmark in root.findall("default:TitleInfo/default:BibliographicInfo/default:MarcEntryInfo/[default:entryID='087']/default:text", ns)]
 
 
+def subshelfmark_order(SAMI_XML):
+    root = ET.fromstring(SAMI_XML)
+    return [shelfmark.text for shelfmark in root.findall("default:TitleInfo/default:BibliographicInfo/default:MarcEntryInfo/[default:entryID='091']/default:text", ns)]
+
+
 def contains_subshelfmarks(shelfmark_order):
 
     sub_shelfmarks = False
@@ -46,13 +51,15 @@ def contains_subshelfmarks(shelfmark_order):
 
 
 
-# titleID = get_title_id(897)
+##################################
+# The following is a collection with sub-shelfmarks
+# C820/7
+# titleID = get_title_id(82527)
 # # titleID = 4015467
 # SAMI_XML = get_SAMI_xml(titleID)
 # print(multiple_callnumbers(SAMI_XML))
 # print(shelfmark_order(SAMI_XML))
 # print(titleID)
-
 
 
 

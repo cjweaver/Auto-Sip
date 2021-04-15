@@ -23,9 +23,9 @@ splash_screen = """
 #    88     88  88.  .88   88   88.  .88 d8'   .8P 88  88                                 #              
 #    88     88  `88888P'   dP   `88888P'  Y88888P  dP  dP                                 #
 #                                                                                         #  
-#    Last update November 11th 2020                                                       #
+#    Last update March 2nd 2021                                                           #
 #                                                                                         #
-#    This is for Chrome version 86.                                                       #
+#    This is for Chrome version 88.                                                       #
 #                                                                                         #
 #    Completes physical structure using SAMI and will check filenames against new schema. #
 #    (N.B filenames with the "i" item field default to CD-style physical structure)       #  

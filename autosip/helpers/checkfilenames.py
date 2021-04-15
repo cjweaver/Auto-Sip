@@ -109,7 +109,7 @@ def check_reg_ex(filepaths, bl_regex, bl_regex_segments):
 
     for fpath in filepaths:
         if not re.match(bl_regex, fpath.stem):
-            if len(fpath.stem.split("_")) == 5 and (return_missing_field == False):
+            if len(fpath.stem.split("_")) == 5 and (bool(return_missing_field(fpath)) == False):
                 regex_segs = bl_regex_segments.copy()
                 del regex_segs['item']
             # True if filename contains an "i" item field

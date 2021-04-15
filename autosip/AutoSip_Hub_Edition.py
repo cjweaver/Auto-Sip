@@ -26,7 +26,7 @@ from prompt_toolkit import prompt
 import itertools, sys
 import logging
 from xml.etree import ElementTree
-import checkfilenames
+# import checkfilenames
 import msvcrt
 
 
@@ -805,21 +805,7 @@ def getSIPStobuild():
         l = [shelfmark.value, directory, filemask, item_format.value, pm_date, reference_sip.value, speed.value, eq.value, noise_reduction.value, notes.value, log_directory.value]
         SIPS.append(l)
 
-        # for sip in SIPS:
-            
-        #     def raise_error(errors):
-        #         # https://stackoverflow.com/questions/44780357/how-to-use-newline-n-in-f-string-to-format-output-in-python-3-6
-        #         raise AttributeError(f'Please correct the following filename errors: \n\n{chr(10).join(str(x) for x in errors[1])}')
-                
-        #     checkfilenames.connect_to_sos(UNC, sip[1])
-        #     filepaths = checkfilenames.get_file_paths(sip[2])
-        #     filename_errors = checkfilenames.check_filenames(filepaths)
-        #     regex_errors = checkfilenames.check_reg_ex(filepaths, checkfilenames.bl_regex, checkfilenames.bl_regex_segments)
-            
-        #     if filename_errors[0]:
-        #         raise_error(filename_errors)
-        #     elif regex_errors[0]:
-        #         raise_error(regex_errors)
+       
 
                 
     return SIPS

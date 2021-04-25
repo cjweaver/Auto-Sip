@@ -503,7 +503,7 @@ def analysis(sip_id):
 
         # handle change of JSON key in new SIP v4
         if j.get("HasCompletedAllTransformationsSuccessfully"):
-            print("\n Analysis Page has finished. We can continue")
+            print(Fore.GREEN + "\nAnalysis Page has finished. We can continue")
             break
         # Search the JSON for failed Analysis/Copy or transforms and retry
         elif j["NavigationState"]["NavigationSteps"][2]["Complete"] == False:
@@ -959,7 +959,7 @@ def check_filenames_in_SIPS(SIPS):
             return print_filename_error(filename_errors)
 
         if sip[12] == True:
-            logger.info("Old filename scheme in use. Skipping Regex check")
+            print(Fore.RED + "Old filename scheme in use. Skipping Regex check")
             continue
 
         regex_errors = checkfilenames.check_reg_ex(filepaths, checkfilenames.bl_regex, checkfilenames.bl_regex_segments)
@@ -1036,6 +1036,7 @@ def main():
     # options.add_argument("--window-size=1920,1080")
     # options.add_argument("--disable-gpu")
     # options.add_argument("--disable-extensions")
+    options.add_experimental_option("excludeSwitches", ["enable-logging"])
     options.add_argument("--start-maximized")
     options.add_argument("'--ignore-certificate-errors'")
 

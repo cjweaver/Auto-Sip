@@ -146,6 +146,8 @@ def shelfmark_from_file_json(file_json):
     """
     filename_parts = [fn_part for fn_part in file_json['Name'].split('_') if fn_part not in originators]
     shelfmark = list(filter(lambda filename: re.search("^(?![isfvISFV]{1}[0-9]+)[a-zA-Z0-9-]{1,}", filename), filename_parts))[0]
+    # Remove any zero padding in the filename
+    shelfmark = shelfmark.split("-")[0] + "-" + str(int(shelfmark.split("-")[1]))
     return shelfmark
 
 
@@ -160,7 +162,7 @@ def filter_sub_shelfmarks(shelfmark, shelfmark_order):
         str: main shelfmark with only one slash e.g. WA 2000/021 as opposed to WA 2000/021/023
     """
 
-    if len(shelfmark.split("-")) > 1:
+    if len(shelfmark.split("-")) > 2:
         for mark in shelfmark_order:
             if shelfmark.startswith(mark):
                 return mark
@@ -315,6 +317,32 @@ def shelfmarks_to_filename_standard(shelfmark_order):
 # user_id = pSIP_json['UserId']
 # physical_step_state_id = [i['StepStateId'] for i in pSIP_json['StepStates'] if i['StepTitle'] == 'Physical Structure'][0]
 
+
+#################################
+# C1690/2-4, C1690/28, C1690/31 #
+#################################
+
+sip_id = 66149
+shelfmark_order = shelfmarks_to_filename_standard(['C1690/2', 'C1690/3', 'C1690/4', 'C1690/28', 'C1690/31'])
+pSIP_json = get_pSIP_json(sip_id)
+sip_text = pSIP_json['Title']
+files_json = pSIP_json['Files']
+item_format = "Tape"
+
+
+# files_json = [
+#             {'Name': 'BL_C1690-002_s1_f01_v1.wav'},
+#             {'Name': 'BL_C1690-002_s1_f02_v1.wav'},
+#             {'Name': 'BL_C1690-002_s1_f03_v1.wav'}, 
+#             {'Name': 'BL_C1690-002_s2_f01_v1.wav'},
+#             {'Name': 'BL_C1690-003_s1_f01_v1.wav'},
+#             {'Name': 'BL_C1690-031_s1_f01_v1.wav'},
+#             {'Name': 'BL_C1690-028_s1_f01_v1.wav'}
+# ]
+
+# for fname in files_json:
+#     shelfmark_from_file_json(fname)
+physical_items_from(files_json, sip_id, item_format, sip_text, shelfmark_order, subshelfmark_order = None)
 
 # # # # # pSIP_json = get_pSIP_json(66839)
 # # # # shelfmark_order = ['C604-170', 'C604-169', 'C604-172', 'C604-171']

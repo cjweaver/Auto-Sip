@@ -143,3 +143,11 @@ def check_reg_ex(filepaths, bl_regex, bl_regex_segments):
 def return_missing_field(fpath):
     # This is far too hacky and need to properly return missing field.
     return [prefix for prefix in ['f', 's', 'v'] if prefix not in [seg[0] for seg in fpath.stem.split("_")]]
+
+
+# # SOS_HLF Drive
+# UNC = r"\\p12l-nas6\SOS_HLF"
+# connect_to_sos(UNC, r"\\Test\\TEST_FILES\\Filename test")
+# filemask = "NRO_RTBT"
+# filepaths = get_file_paths(filemask)
+# print(check_reg_ex(filepaths, bl_regex, bl_regex_segments))

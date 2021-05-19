@@ -310,7 +310,7 @@ def source_files(directory, file_patterns, sip_id, pm_date, reference_sip):
     file_names = []
     for file_pattern in file_patterns:
         file_pattern_box.clear()
-        file_pattern_box.send_keys(file_pattern)
+        file_pattern_box.send_keys(file_pattern + "_")
         file_pattern_box.send_keys(Keys.TAB)
         driver.execute_script("arguments[0].click();", driver.find_element_by_xpath("//*[@id='main-content']/div[3]/div/button"))
         # if len(file_patterns) != 1:
@@ -858,8 +858,13 @@ def getSIPStobuild(filepath):
         shelfmark.value = shelfmark.value.strip()
         
         # The following values cannot be blank
-        if not all((directory.value, item_format.value, pm_date.value, reference_sip.value)):
-            raise AttributeError(f'Missing a required value(s) from row {directory.row - 1} {shelfmark.value} in the SIPS spreadsheet')
+        spreadsheet_values = {"directory": directory.value, 
+                              "item format": item_format.value, 
+                              "Process Metadata date": pm_date.value, 
+                              "Reference sip": reference_sip.value
+                             }
+        if not all(spreadsheet_values.values()):
+            raise AttributeError(f'Missing a required value(s) - {[key for key, value in spreadsheet_values.items() if value == None][0]} from row {directory.row - 1} {shelfmark.value} in the SIPS spreadsheet')
 
         # Check reference SIP is correct
         print("\n")
@@ -922,6 +927,14 @@ def getSIPStobuild(filepath):
         filtered_shelfmarks = list(filter(lambda shelfmark: shelfmarks.count(shelfmark) > 1, shelfmarks))
         if len(filtered_shelfmarks) > 1:
             raise AttributeError(f"The shelfmark {filtered_shelfmarks[0]} appears more than once in the SIPS spreadsheet")
+    
+    ######################################################
+    # Check for multiple shelfmarks on a single row      #
+    ######################################################
+    # def check_for_multiple_shelfmarks(SIP):
+    #     shelfmarks = [sip[0] for ]
+
+
 
     check_for_dup_shelfmark(SIPS)
     return SIPS

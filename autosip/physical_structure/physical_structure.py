@@ -147,7 +147,7 @@ def shelfmark_from_file_json(file_json):
     filename_parts = [fn_part for fn_part in file_json['Name'].split('_') if fn_part not in originators]
     shelfmark = list(filter(lambda filename: re.search("^(?![isfvISFV]{1}[0-9]+)[a-zA-Z0-9-]{1,}", filename), filename_parts))[0]
     # Remove any zero padding in the filename
-    shelfmark = shelfmark.split("-")[0] + "-" + str(int(shelfmark.split("-")[1]))
+    # shelfmark = shelfmark.split("-")[0] + "-" + str(int(shelfmark.split("-")[1]))
     return shelfmark
 
 
@@ -322,27 +322,27 @@ def shelfmarks_to_filename_standard(shelfmark_order):
 # C1690/2-4, C1690/28, C1690/31 #
 #################################
 
-sip_id = 66149
-shelfmark_order = shelfmarks_to_filename_standard(['C1690/2', 'C1690/3', 'C1690/4', 'C1690/28', 'C1690/31'])
-pSIP_json = get_pSIP_json(sip_id)
-sip_text = pSIP_json['Title']
-files_json = pSIP_json['Files']
-item_format = "Tape"
+# sip_id = 66149
+# shelfmark_order = shelfmarks_to_filename_standard(['C1690/2', 'C1690/3', 'C1690/4', 'C1690/28', 'C1690/31'])
+# pSIP_json = get_pSIP_json(sip_id)
+# sip_text = pSIP_json['Title']
+# files_json = pSIP_json['Files']
+# item_format = "Tape"
 
 
-# files_json = [
-#             {'Name': 'BL_C1690-002_s1_f01_v1.wav'},
-#             {'Name': 'BL_C1690-002_s1_f02_v1.wav'},
-#             {'Name': 'BL_C1690-002_s1_f03_v1.wav'}, 
-#             {'Name': 'BL_C1690-002_s2_f01_v1.wav'},
-#             {'Name': 'BL_C1690-003_s1_f01_v1.wav'},
-#             {'Name': 'BL_C1690-031_s1_f01_v1.wav'},
-#             {'Name': 'BL_C1690-028_s1_f01_v1.wav'}
-# ]
+# # files_json = [
+# #             {'Name': 'BL_C1690-002_s1_f01_v1.wav'},
+# #             {'Name': 'BL_C1690-002_s1_f02_v1.wav'},
+# #             {'Name': 'BL_C1690-002_s1_f03_v1.wav'}, 
+# #             {'Name': 'BL_C1690-002_s2_f01_v1.wav'},
+# #             {'Name': 'BL_C1690-003_s1_f01_v1.wav'},
+# #             {'Name': 'BL_C1690-031_s1_f01_v1.wav'},
+# #             {'Name': 'BL_C1690-028_s1_f01_v1.wav'}
+# # ]
 
-# for fname in files_json:
-#     shelfmark_from_file_json(fname)
-physical_items_from(files_json, sip_id, item_format, sip_text, shelfmark_order, subshelfmark_order = None)
+# # for fname in files_json:
+# #     shelfmark_from_file_json(fname)
+# physical_items_from(files_json, sip_id, item_format, sip_text, shelfmark_order, subshelfmark_order = None)
 
 # # # # # pSIP_json = get_pSIP_json(66839)
 # # # # shelfmark_order = ['C604-170', 'C604-169', 'C604-172', 'C604-171']

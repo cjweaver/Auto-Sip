@@ -61,5 +61,14 @@ def contains_subshelfmarks(shelfmark_order):
 # print(shelfmark_order(SAMI_XML))
 # print(titleID)
 
+##################################
+# The following is a collection with sub-shelfmarks
+# C1690/2
+# titleID = get_title_id(66149)
+# # titleID = 4015467
+# SAMI_XML = get_SAMI_xml(titleID)
+# print(multiple_callnumbers(SAMI_XML))
+# print(shelfmark_order(SAMI_XML))
+# print(titleID)
 
 

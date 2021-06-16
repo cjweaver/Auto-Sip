@@ -8,3 +8,7 @@ File hash (checksum) failure is recorded in the log file.
 Sept 17th
 Fixed bug where date of the refernce sip wasn't be added to the new process metadata.
 Will check spreadsheet to make sure reference SIP ID is correct. The title of the refernce SIp will be printed in the log.
+
+April 2021
+Physical structure can be built even if the filenames use zero paddiing and SAMI shelfmarks do not.
+Suppress Chromedriver errors (bluetooth adapter not available)

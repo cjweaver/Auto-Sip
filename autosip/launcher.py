@@ -176,8 +176,8 @@ def createNewsip(shelfmark, duplicate_sip, grouping = None):
             if sami_item_text.startswith(shelfmark):
                 driver.execute_script("arguments[0].click();", SAMI_items[i])
                 break
-            elif sami_item_text.startswith(grouping):
-                driver.execute_script("arguments[0].click();", SAMI_items[i])
+            # elif sami_item_text.startswith(grouping):
+            #     driver.execute_script("arguments[0].click();", SAMI_items[i])
     else:
         sami_item_text = SAMI_items[0].text
         driver.execute_script("arguments[0].click();", SAMI_items[0])

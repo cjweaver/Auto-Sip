@@ -17,6 +17,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import UnexpectedAlertPresentException
 from selenium.common.exceptions import SessionNotCreatedException
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
@@ -28,6 +29,7 @@ import logging
 from xml.etree import ElementTree
 # import checkfilenames
 import msvcrt
+import autosip.physical_structure.physical_structure as ps
 
 
 
@@ -234,7 +236,7 @@ def date_tally(filenames):
     return tally_dates[-1][0]
 
 
-def source_files(directory, file_patterns, sip_id, pm_date):
+def source_files(directory, file_patterns, sip_id, pm_date, reference_sip):
     # First check this is the right page
     # Arrive here by clicking "Complete" in previous page
     handle_logout("Select Files", "/Steps/Select/", sip_id)
@@ -356,7 +358,20 @@ def source_files(directory, file_patterns, sip_id, pm_date):
     # As they are coming from the spreadsheet.
     if pm_date == "NO":
         # Use the date specified in the reference SIP
-        process_metadata_date = "N/A"
+        reference_sip_json = ps.get_pSIP_json(reference_sip)
+        reference_sip_pm = json.loads(reference_sip_json['ProcessMetadata'])
+        refernce_sip_date = [process['date'] for process in reference_sip_pm['processMetadata'][0]['children'] if process['processType'] == 'Migration'][0] 
+        
+        # Both of the following time formats appear in process metadata.
+        # process_metadata_date = datetime.datetime.strptime(refernce_sip_date, "%Y-%m-%dT%H:%M:%S.%fZ")
+        # "Borrowed" from https://stackoverflow.com/questions/5045210/how-to-remove-unconverted-data-from-a-python-datetime-object
+        # 26 is the len('unconverted data remains: ')
+        try:
+            process_metadata_date = datetime.datetime.strptime(refernce_sip_date, "%Y-%m-%d")
+        except ValueError as v:
+            if len(v.args) > 0 and v.args[0].startswith('unconverted data remains: '):
+                refernce_sip_date = refernce_sip_date[:-(len(v.args[0]) - 26)]
+                process_metadata_date = datetime.datetime.strptime(refernce_sip_date, "%Y-%m-%d")
         print("\nUsing the dates specified in the reference SIP process metadata page")
     elif pm_date == "YES":
         # use file creation date
@@ -545,7 +560,7 @@ def physical_structure(physical_structure_url, sip_id, item_format):
 
     for i in range((len(file_names)) - 1):
     # Clicking the dropdown above automatically adds a file select, hence len(file_names) - 1
-        driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='demo2']/div/div[1]/div[3]/button[2]"))))
+        driver.execute_script("arguments[0].click();", driver.wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='demo2']/div/div[1]/div[3]/button[1]"))))
         # driver.wait.until(EC.presence_of_element_located((By.ID, "structure-heading")))
     select_div = driver.find_element_by_xpath('//*[@id="demo2"]/div/div[2]/ul')
     selects = select_div.find_elements_by_tag_name("select")
@@ -819,9 +834,9 @@ def main():
     
     AutoSip - Hub Edition 
     
-    Last update February 7th 2020
+    Last update June 24th 2021
 
-    This is for Chrome version 80.
+    Chromedriver needs to be supplied separately.
     
     
     Very much a work in progress!
@@ -851,16 +866,23 @@ def main():
     # options.add_argument("--disable-gpu")
     # options.add_argument("--disable-extensions")
   
+    options.add_experimental_option("excludeSwitches", ["enable-logging"])
     options.add_argument("--start-maximized")
+    options.add_argument("'--ignore-certificate-errors'")
     # options.add_argument("--headless")
 
     try:
-        if getattr( sys, 'frozen', False ) :
-            driver = webdriver.Chrome(executable_path=os.path.join(sys._MEIPASS, "bin", "chromedriver.exe"), options=options)
-        else:
-            # driver = webdriver.Chrome()
+        # Find the Chromedriver on the PATH
+        try:
+            driver = webdriver.Chrome(executable_path=os.path.join(os.getcwd(), "chromedriver.exe"), options=options)
+        except WebDriverException as e:
             driver = webdriver.Chrome(options=options)
     except SessionNotCreatedException as e:
+        print("\nUnable to launch Chrome due to.......", e)
+        print("Please make sure you have the version of Chrome driver that makes your current Chrome version\nhttps://chromedriver.chromium.org/downloads")
+        input("Press q to quit: ")
+        quit()
+    except WebDriverException as e:
         print("\nUnable to launch Chrome due to.......", e)
         input("Press q to quit: ")
         quit()
@@ -900,7 +922,7 @@ def main():
             logger.info(f"SIP ID for shelfmark {shelfmark} is {sip_id}")
             
 
-            process_metadata_date = source_files(directory, filemasks, sip_id, pm_date)
+            process_metadata_date = source_files(directory, filemasks, sip_id, pm_date, reference_sip)
             
           
 

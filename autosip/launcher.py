@@ -20,7 +20,8 @@ from selenium import webdriver
 from selenium.common.exceptions import (NoSuchElementException,
                                         SessionNotCreatedException,
                                         TimeoutException,
-                                        UnexpectedAlertPresentException)
+                                        UnexpectedAlertPresentException,
+                                        WebDriverException)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
@@ -1056,15 +1057,17 @@ def main():
     
     # The Chromedrive exe is either stored in /bin in the complied Auto-SIP.exe or is simply on the PATH
     try:
-        if getattr( sys, 'frozen', False ) :
-            driver = webdriver.Chrome(executable_path=os.path.join(sys._MEIPASS, "bin", "chromedriver.exe"), options=options)
-        else:
-            # driver = webdriver.Chrome()
+        # Find the Chromedriver on the PATH
+        try:
+            driver = webdriver.Chrome(executable_path=os.path.join(os.getcwd(), "chromedriver.exe"), options=options)
+        except WebDriverException as e:
             driver = webdriver.Chrome(options=options)
-    # Need to catch when the chromedriver doesn't match the current Chrome installed
-    # Exception has occurred: SessionNotCreatedException
-    # Message: session not created: Chrome version must be between 70 and 73
     except SessionNotCreatedException as e:
+        print("\nUnable to launch Chrome due to.......", e)
+        print("Please make sure you have the version of Chrome driver that makes your current Chrome version\nhttps://chromedriver.chromium.org/downloads")
+        input("Press q to quit: ")
+        quit()
+    except WebDriverException as e:
         print("\nUnable to launch Chrome due to.......", e)
         input("Press q to quit: ")
         quit()

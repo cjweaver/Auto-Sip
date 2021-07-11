@@ -1,0 +1,16 @@
+version: '3.7'
+
+x-base-dev: &base-dev
+  restart: on-failure
+
+services:
+
+  salpython:
+    <<: *base-dev
+    image: salpython:latest
+    build:
+      context: .
+      target: salpython
+    volumes:
+      - ./src:/src
+      - .:/project
